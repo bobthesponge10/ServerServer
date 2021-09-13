@@ -1,0 +1,4 @@
+pyperclip
+windows_curses; sys_platform == 'win32'
+curses; sys_platform != 'win32'
+discord.py

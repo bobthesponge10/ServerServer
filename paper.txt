@@ -1,0 +1,29 @@
+project idea
+code
+ppt
+term paper
+
+
+abstract
+introduction
+background
+proposal/ideal
+implementation
+results
+conclude
+future work/final thoughts
+
+
+9-13 11-13
+nov 1 - 31
+    ppt
+    term paper
+
+
+
+weekly report
+    plan
+    implementd
+    improve
+
+gantt chart/weekly breakdown
