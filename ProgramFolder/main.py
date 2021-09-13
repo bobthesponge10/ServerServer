@@ -8,6 +8,7 @@ import time
 import os
 import sys
 
+
 def main():
     userInfoFile = "ProgramFolder/data/userdata.json"
     serverInfoFile = "ProgramFolder/serverTypes/"

@@ -127,8 +127,8 @@ class ControllerManager:
         if server_type not in self.server_types:
             return False
 
-    def set_server_types_dir(self, dir):
-        self.server_types_dir = dir
+    def set_server_types_dir(self, dir_):
+        self.server_types_dir = dir_
         return True
 
     def get_server_types_dir(self):
@@ -175,5 +175,3 @@ class ControllerManager:
                 return False
             return True
         return False
-
-
