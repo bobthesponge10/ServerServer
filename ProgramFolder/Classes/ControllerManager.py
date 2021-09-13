@@ -1,6 +1,7 @@
 import os
-from functions import module_from_file
+from functions import module_from_file, remove_chars
 import inspect
+import json
 
 
 class ControllerManager:
@@ -24,51 +25,14 @@ class ControllerManager:
         cls.objects.remove(obj)
 
     @classmethod
-    def init_commands(cls):
-        cls.commands = []
+    def add_command(cls, keywords, ignore_chars=None):
+        if not ignore_chars:
+            ignore_chars = []
 
-        @cls.add_command(["bogos?", "bogos"])
-        def binted(self, *args):
-            self.console.print("binted")
-
-        @cls.add_command(["loadcontrollers", "load_controllers"])
-        def load_server_types(self, *args):
-            l = len(self.get_server_names())
-            self.load_server_types()
-            l = len(self.get_server_names()) - l
-            self.console.print(f"Loaded {l} additional controller(s) from '{self.get_server_types_dir()}'")
-
-        @cls.add_command(["getcontrollers", "get_controllers", "printcontrollers", "print_controllers"])
-        def get_server_names(self, *args):
-            self.console.print(", ".join(self.get_server_names()))
-
-        @cls.add_command(["reloadcontrollers", "reload_controllers"])
-        def reload_all_controllers(self, *args):
-            for i in self.get_server_names():
-                self.console.print("Reloading " + i)
-                self.reload_type(i)
-            self.console.print("Finished Reloading all controllers")
-
-        @cls.add_command(["reloadcontroller", "reload_controller"])
-        def reload_controller(self, *args):
-            if len(args) < 1:
-                self.console.print("Error: Please specify a controller")
-            else:
-                if args[0] in self.get_server_names():
-                    self.reload_type(args[0])
-                    self.console.print("Reloaded " + args[0])
-                else:
-                    self.console.print("Error: Not a valid controller")
-
-        @cls.add_command(["reloadmanager", "reload_manager"])
-        def reload_manager(self, *args):
-            self.reload()
-
-    @classmethod
-    def add_command(cls, keywords):
         def f(func):
-            cls.commands.append({"keywords": keywords, "function": func})
+            cls.commands.append({"keywords": keywords, "function": func, "ignore": ignore_chars})
             return func
+
         return f
 
     @classmethod
@@ -83,13 +47,93 @@ class ControllerManager:
 
     # </editor-fold>
 
+    # <editor-fold desc="Commands">
+    @classmethod
+    def init_commands(cls):
+        cls.commands = []
+
+        @cls.add_command(["bogos?", "bogos"], ignore_chars=["-", "_"])
+        def binted(self, *args):
+            self.console.print("binted")
+
+        @cls.add_command(["loadcontrollers"], ignore_chars=["-", "_"])
+        def load_server_types(self, *args):
+            l = len(self.get_server_names())
+            self.load_server_types()
+            l = len(self.get_server_names()) - l
+            self.console.print(f"Loaded {l} additional controller(s) from '{self.get_server_types_dir()}'")
+
+        @cls.add_command(["getcontrollers", "printcontrollers"], ignore_chars=["-", "_"])
+        def get_server_names(self, *args):
+            self.console.print(", ".join(self.get_server_names()))
+
+        @cls.add_command(["reloadcontrollers"], ignore_chars=["-", "_"])
+        def reload_all_controllers(self, *args):
+            for i in self.get_server_names():
+                self.console.print("Reloading " + i)
+                self.reload_type(i)
+            self.console.print("Finished Reloading all controllers")
+
+        @cls.add_command(["reloadcontroller"], ignore_chars=["-", "_"])
+        def reload_controller(self, *args):
+            if len(args) < 1:
+                self.console.print("Error: Please specify a controller")
+            else:
+                if args[0] in self.get_server_names():
+                    self.reload_type(args[0])
+                    self.console.print("Reloaded " + args[0])
+                else:
+                    self.console.print("Error: Not a valid controller")
+
+        @cls.add_command(["reloadmanager"], ignore_chars=["-", "_"])
+        def reload_manager(self, *args):
+            self.reload()
+
+        @cls.add_command(["createserver"], ignore_chars=["-", "_"])
+        def create_instance(self, *args):
+            if len(args) > 1:
+                if self.create_instance(args[0], args[1]):
+                    self.console.print(f"Created instance of {args[0]} with name {args[1]}")
+
+        @cls.add_command(["removeinstance"], ignore_chars=["-", "_"])
+        def remove_instance(self, *args):
+            if len(args) > 1:
+                if self.remove_instance(args[0], args[1]):
+                    self.console.print(f"Removed instance of {args[0]} with name {args[1]}")
+
+        @cls.add_command(["saveinstances"], ignore_chars=["-", "_"])
+        def save(self, *args):
+            if self.save_instances_to_file():
+                self.console.print("Saved instances to file")
+            else:
+                self.console.print("Failed to save instances to file")
+
+        @cls.add_command(["loadinstances"], ignore_chars=["-", "_"])
+        def load(self, *args):
+            if self.load_instances_from_file():
+                self.console.print("Loaded instances from file")
+            else:
+                self.console.print("Failed to load instances from file")
+
+        @cls.add_command(["listallinstances", "printinstances"], ignore_chars=["-", "_"])
+        def list(self, *args):
+            for i in self.get_server_names():
+                instances = self.get_names_of_server_from_type(i)
+                for name in instances:
+                    self.console.print(f"{i}: {name}")
+
+    # </editor-fold>
+
     def __init__(self, ConsoleObj):
         self.parent_object = type(self)
         self.objects.append(self)
 
         self.console = ConsoleObj
         self.server_types_dir = ""
-        self.server_types = {}  # format {name: {"module": module, "file": filename}}
+        self.server_types = {}  # format {type: {"module": module, "file": filename}}
+
+        self.instances_data_file = ""
+        self.instances = {}     # format {type: [instance1, instance2, ...]}
 
         self.reload_needed = False
 
@@ -113,9 +157,14 @@ class ControllerManager:
 
     def run_command(self, name, *args, **kwargs):
         for i in self.parent_object.commands:
-            if name.lower() in i["keywords"]:
-                i["function"](self, *args, **kwargs)
-                return True
+            temp_name = remove_chars(name, i["ignore"])
+            if temp_name.lower() in i["keywords"]:
+                try:
+                    i["function"](self, *args, **kwargs)
+                    return True
+                except Exception as e:
+                    self.console.print(f"Error running {name}, Error: {e.__repr__()}")
+                    return False
         return False
 
     def run_command_on_server_type(self, server_type, name, *args, **kwargs):
@@ -134,8 +183,27 @@ class ControllerManager:
     def get_server_types_dir(self):
         return self.server_types_dir
 
+    def set_instance_data_file(self, file):
+        self.instances_data_file = file
+
+    def get_instance_data_file(self):
+        return self.instances_data_file
+
     def get_server_names(self):
         return list(self.server_types.keys())
+
+    def get_names_of_server_from_type(self, type_):
+        if type_ not in self.instances:
+            return []
+        return [i.get_name() for i in self.instances[type_]]
+
+    def get_instance_from_type_and_name(self, type_, name):
+        if type_ not in self.instances:
+            return
+        l = self.instances[type_]
+        for i in l:
+            if i["name"] == name:
+                return i["instance"]
 
     def load_server_types(self):
         if not self.server_types_dir:
@@ -152,6 +220,7 @@ class ControllerManager:
                         self.server_types[module.name] = {"module": module, "file": file}
                     except AttributeError:
                         pass
+        self.init_instance_storage()
         return True
 
     def reload_type(self, name):
@@ -175,3 +244,67 @@ class ControllerManager:
                 return False
             return True
         return False
+
+    def init_instance_storage(self):
+        for i in self.get_server_names():
+            if i not in self.instances:
+                self.instances[i] = []
+
+    def _create_instance_r(self, type_, name, data):
+        if type_ not in self.get_server_names():
+            return
+        m = self.server_types[type_]["module"](name)
+        m.set_data(data)
+        return m
+
+    def create_instance(self, type_, name):
+        m = self._create_instance_r(type_, name, None)
+        if m:
+            self.instances[type_].append(m)
+            return True
+        return False
+
+    def remove_instance(self, type_, name):
+        if type_ not in self.get_server_names():
+            return False
+
+        for index, instance in enumerate(self.instances[type_]):
+            if instance.get_name() == name:
+                del self.instances[type_][index]
+                self.console.print(self.instances)
+                return True
+        return False
+
+    def load_instances_from_file(self):
+        file = open(self.instances_data_file, "r")
+        try:
+            data = json.loads(file.read())
+        except IOError:
+            return False
+        file.close()
+
+        self.init_instance_storage()
+
+        for i in data:
+            l = data[i]
+            for instance in l:
+                ins = self._create_instance_r(i, instance["name"], instance["data"])
+                if ins:
+                    self.instances[i].append(ins)
+        return True
+
+    def save_instances_to_file(self):
+        data = {}
+
+        for i in self.get_server_names():
+            data[i] = []
+
+        for i in self.instances:
+            l = self.instances[i]
+            for instance in l:
+                data[i].append({"name": instance.get_name(), "data": instance.get_data()})
+
+        file = open(self.instances_data_file, "w")
+        file.write(json.dumps(data))
+        file.close()
+        return True

@@ -11,7 +11,8 @@ import sys
 
 def main():
     userInfoFile = "ProgramFolder/data/userdata.json"
-    serverInfoFile = "ProgramFolder/serverTypes/"
+    serverInfoDir = "ProgramFolder/serverTypes/"
+    instanceDataFile = "ProgramFolder/data/controllerInstances.json"
 
     os.chdir(os.path.dirname(os.path.dirname(__file__)))
 
@@ -23,22 +24,23 @@ def main():
     UserInfo.set_file_path(userInfoFile)
     UserInfo.load()
 
-    Manager.set_server_types_dir(serverInfoFile)
+    Manager.set_server_types_dir(serverInfoDir)
+    Manager.set_instance_data_file(instanceDataFile)
     Manager.init_commands()
     Manager.load_server_types()
+    Manager.load_instances_from_file()
 
     Console.start()
     Console.update_prefix("->")
 
     Console.print(sys.version)
     Console.print(f"Loaded {len(UserInfo.get_users())} user(s) from '{userInfoFile}'")
-    Console.print(f"Loaded {len(Manager.get_server_names())} server type(s) from '{serverInfoFile}'")
+    Console.print(f"Loaded {len(Manager.get_server_names())} server type(s) from '{serverInfoDir}'")
 
     running = True
 
     while running:
         if Manager.get_reload_needed():
-            Console.print("Reloading controller manager")
             file = ControllerManager.get_file()
             o = ControllerManager.get_objects()
 
@@ -82,6 +84,8 @@ def main():
 
     Console.print("Saving user data")
     UserInfo.save()
+    Console.print("Saving module data")
+    Manager.save_instances_to_file()
     Console.print("Stopping socket server")
     MainServer.stop()
 

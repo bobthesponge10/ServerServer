@@ -60,3 +60,7 @@ def parse_string_for_commands(string):
         out.append(segment)
 
     return out
+
+
+def remove_chars(string, char_list):
+    return "".join([i for i in string if i not in char_list])
