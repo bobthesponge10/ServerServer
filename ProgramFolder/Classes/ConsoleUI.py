@@ -51,13 +51,16 @@ class ConsoleUI(Thread):
     def print(self, string, newline=True, loop=True):
         if not isinstance(string, type("")):
             string = string.__repr__()
+        lines = string.split("\n")
         s = self.max_x
-        if loop and len(string) > s:
-            inputs = ceil(len(string)/s)
-            for i in range(inputs):
-                self._print(string[i * s:(i+1) * s], newline=(i != (inputs - 1)) or newline)
-        else:
-            self._print(string, newline)
+
+        for string in lines:
+            if loop and len(string) > s:
+                inputs = ceil(len(string)/s)
+                for i in range(inputs):
+                    self._print(string[i * s:(i+1) * s], newline=(i != (inputs - 1)) or newline)
+            else:
+                self._print(string, newline)
 
     def _print(self, string, newline=True):
         if not isinstance(string, type("")):

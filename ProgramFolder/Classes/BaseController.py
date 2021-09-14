@@ -50,12 +50,11 @@ class BaseController:
             temp_name = remove_chars(name, i["ignore"])
             if temp_name.lower() in i["keywords"]:
                 try:
-                    i["function"](cls, *args, **kwargs)
-                    return True
+                    return i["function"](cls, *args, **kwargs)
                 except Exception as e:
                     cls.manager.get_console().print(f"Error running {name}, Error: {e.__repr__()}")
-                    return False
-        return False
+                    return ""
+        return ""
 
     @classmethod
     def set_manager(cls, manager):
@@ -73,7 +72,7 @@ class BaseController:
 
         @cls.add_class_command(["test"])
         def test_command(cls_):
-            cls_.get_manager().get_console().print("TestSuccess")
+            return "TestSuccess"
     # </editor-fold>
 
     def __init__(self, name):
@@ -103,9 +102,8 @@ class BaseController:
             temp_name = remove_chars(name, i["ignore"])
             if temp_name.lower() in i["keywords"]:
                 try:
-                    i["function"](self, *args, **kwargs)
-                    return True
+                    return i["function"](self, *args, **kwargs)
                 except Exception as e:
                     self.parent_object.manager.get_console().print(f"Error running {name}, Error: {e.__repr__()}")
-                    return False
-        return False
+                    return ""
+        return ""

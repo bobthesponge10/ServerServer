@@ -72,15 +72,22 @@ def main():
                         if len(path) == 1:
                             module_name = path[0]
                             if module_name in Manager.get_server_names():
-                                Manager.run_command_on_server_type(module_name, actual_command, *args)
+                                output = Manager.run_command_on_server_type(module_name, actual_command, *args)
+                                if output:
+                                    Console.print(output)
 
                         elif len(path) == 2:
                             module_name = path[0]
                             controller = path[1]
                             if module_name in Manager.get_server_names():
-                                Manager.run_command_on_server_instance(module_name, controller, actual_command, *args)
+                                output = Manager.run_command_on_server_instance(module_name,
+                                                                                controller, actual_command, *args)
+                                if output:
+                                    Console.print(output)
                     else:
-                        Manager.run_command(command, *args)
+                        output = Manager.run_command(command, *args)
+                        if output:
+                            Console.print(output)
 
     Console.print("Saving user data")
     UserInfo.save()
