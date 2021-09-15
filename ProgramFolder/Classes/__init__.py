@@ -11,3 +11,4 @@ from .BaseController import BaseController
 from .Server import Server
 from .Client import Client
 from .ControllerManager import ControllerManager
+from .UserHandle import UserHandle

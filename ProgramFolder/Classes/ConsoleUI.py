@@ -328,6 +328,8 @@ class ConsoleUI(Thread):
             copy(self.input_text[a:b])
 
     def up(self):
+        if len(self.input_history) == 0:
+            return
         if self.input_index == -1:
             self.input_storage = self.input_text
         self.input_index += 1

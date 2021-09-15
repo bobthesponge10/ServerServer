@@ -1,4 +1,6 @@
 from functions import remove_chars
+from queue import Queue, Empty
+import os
 
 
 class BaseController:
@@ -6,6 +8,7 @@ class BaseController:
     class_commands = []
     objects = []
     manager = None
+    type = "Default"
 
     # <editor-fold desc="Class Methods">
     @classmethod
@@ -45,14 +48,14 @@ class BaseController:
         return f
 
     @classmethod
-    def run_class_command(cls, name, *args, **kwargs):
+    def run_class_command(cls, name, handle, *args, **kwargs):
         for i in cls.class_commands:
             temp_name = remove_chars(name, i["ignore"])
             if temp_name.lower() in i["keywords"]:
                 try:
-                    return i["function"](cls, *args, **kwargs)
+                    return i["function"](cls, handle, *args, **kwargs)
                 except Exception as e:
-                    cls.manager.get_console().print(f"Error running {name}, Error: {e.__repr__()}")
+                    handle.print(f"Error running {name}, Error: {e.__repr__()}")
                     return ""
         return ""
 
@@ -64,6 +67,7 @@ class BaseController:
     def get_manager(cls):
         return cls.manager
     # </editor-fold>
+
     # <editor-fold desc="Commands">
 
     @classmethod
@@ -71,16 +75,25 @@ class BaseController:
         cls.commands = []
 
         @cls.add_class_command(["test"])
-        def test_command(cls_):
-            return "TestSuccess"
+        def test_command(cls_, user, *args):
+            user.print("TestSuccess")
     # </editor-fold>
 
-    def __init__(self, name):
+    def __init__(self, name, *args):
         self.parent_object = BaseController
         self.objects.append(self)
         self.name = name
+        self.base_dir = self.manager.get_server_dir()
+
+        self.path = os.path.join(self.base_dir, self.type, self.name)
+        if not os.path.isdir(self.path):
+            os.makedirs(self.path)
 
         self.data = None
+
+        self.running = False
+
+        self.queue = Queue()
 
     def remove(self):
         self.parent_object.remove(self)
@@ -97,13 +110,37 @@ class BaseController:
     def get_name(self):
         return self.name
 
-    def run_command(self, name, *args, **kwargs):
+    def set_running(self, running):
+        self.running = running
+
+    def get_running(self):
+        return self.running
+
+    def run_command(self, name, handle, *args, **kwargs):
         for i in self.parent_object.commands:
             temp_name = remove_chars(name, i["ignore"])
             if temp_name.lower() in i["keywords"]:
                 try:
-                    return i["function"](self, *args, **kwargs)
+                    return i["function"](self, handle, *args, **kwargs)
                 except Exception as e:
-                    self.parent_object.manager.get_console().print(f"Error running {name}, Error: {e.__repr__()}")
+                    handle.print(f"Error running {name}, Error: {e.__repr__()}")
                     return ""
         return ""
+
+    def add_to_queue(self, item):
+        self.queue.put(item, block=True, timeout=-1)
+
+    def get_queue(self):
+        out = []
+        while self.queue.qsize() > 0:
+            try:
+                out.append(self.queue.get(False))
+            except Empty:
+                break
+        return out
+
+    def start(self):
+        raise NotImplemented
+
+    def stop(self):
+        raise NotImplemented
