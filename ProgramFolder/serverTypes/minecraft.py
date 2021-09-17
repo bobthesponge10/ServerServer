@@ -12,7 +12,7 @@ class Controller(BaseController):
     def __init__(self, name, *args):
         super().__init__(name, *args)
 
-        self.version = "1.12"
+        self.version = "1.16.4"
         self.jar_name = "server.jar"
 
     def start(self):
@@ -40,8 +40,8 @@ class Controller(BaseController):
         eula.close()
 
         p = subprocess.Popen(f"java -Xmx4096M -Xms4096M -jar {self.jar_name} nogui", stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        p.stdin.write(b"stop\n")
-        p.stdin.flush()
+        #p.stdin.write(b"stop\n")
+        #p.stdin.flush()
         p.communicate()
         os.chdir(old_dir)
 
