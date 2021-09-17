@@ -95,8 +95,9 @@ class ControllerManager:
         @cls.add_command(["createserver", "makeserver", "createinstance", "makeinstance"], ignore_chars=ignore)
         def create_instance(self, handle, *args):
             if len(args) > 1:
-                if self.create_instance(args[0], args[1], *args):
+                if self.create_instance(args[0], args[1], *args[2:]):
                     handle.print(f"Created instance of {args[0]} with name {args[1]}")
+                    return True
             handle.print("Error: invalid arguments")
 
         @cls.add_command(["removeinstance", "deleteinstance"], ignore_chars=ignore) # (TODO) makesure this cant happen while server is on

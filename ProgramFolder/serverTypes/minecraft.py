@@ -15,7 +15,10 @@ class Controller(BaseController):
 
         self.thread = Thread(target=self.run, daemon=True)
 
-        self.version = "1.16.4"
+        if len(args) > 0:
+            self.version = args[0]
+        else:
+            self.version = "1.16.4"
         self.jar_name = "server.jar"
         self.memory_to_use = 4096
         self.world_file = "world"
@@ -23,10 +26,14 @@ class Controller(BaseController):
         self.process = None
 
     def run(self):
-        self.running = True
-        self.initial_setup()
-        self.run_server()
-        self.running = False
+        self.add_to_queue(self.version)
+        try:
+            self.running = True
+            self.initial_setup()
+            self.run_server()
+            self.running = False
+        except Exception as e:
+            self.add_to_queue(str(e))
 
     def run_server(self):
         old_dir = os.path.abspath(os.getcwd())
