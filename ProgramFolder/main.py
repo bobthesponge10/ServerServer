@@ -28,6 +28,9 @@ def main():
     MainServer = Server()
     Manager = ControllerManager(Console, user_handles)
 
+    Console.start()
+    Console.update_prefix("->")
+
     UserInfo.set_file_path(userInfoFile)
     UserInfo.load()
 
@@ -37,9 +40,6 @@ def main():
     Manager.init_commands()
     Manager.load_server_types()
     Manager.load_instances_from_file()
-
-    Console.start()
-    Console.update_prefix("->")
 
     Console.print(sys.version)
     Console.print(f"Loaded {len(UserInfo.get_users())} user(s) from '{userInfoFile}'")
@@ -87,18 +87,18 @@ def main():
 
                             if len(path) == 1:
                                 module_name = path[0]
-                                if module_name in Manager.get_server_names():
-                                    Manager.run_command_on_server_type(module_name, actual_command, user, *args)
+                                Manager.run_command_on_server_type(module_name, actual_command, user, *args)
 
                             elif len(path) == 2:
                                 module_name = path[0]
                                 controller = path[1]
-                                if module_name in Manager.get_server_names():
-                                    Manager.run_command_on_server_instance(module_name, controller, actual_command,
+                                Manager.run_command_on_server_instance(module_name, controller, actual_command,
                                                                                                         user, *args)
                         else:
                             Manager.run_command(command, user, *args)
 
+    Console.print("Closing Server Instances")
+    Manager.close_instances()
     Console.print("Saving user data")
     UserInfo.save()
     Console.print("Saving module data")

@@ -72,7 +72,6 @@ class BaseController:
 
     @classmethod
     def init_commands(cls):
-        cls.commands = []
 
         @cls.add_class_command(["test"])
         def test_command(cls_, user, *args):

@@ -2,6 +2,7 @@ import os
 from functions import module_from_file, remove_chars
 import inspect
 import json
+import time
 
 
 class ControllerManager:
@@ -58,16 +59,16 @@ class ControllerManager:
         def binted(self, handle, *args):
             handle.print("binted")
 
-        @cls.add_command(["loadcontrollers"], ignore_chars=ignore)
+        @cls.add_command(["loadcontrollers", "loadnewcontrollers", "newcontrollers"], ignore_chars=ignore)
         def load_server_types(self, handle, *args):
             l = len(self.get_server_names())
             self.load_server_types()
             l = len(self.get_server_names()) - l
             handle.print(f"Loaded {l} additional controller(s) from '{self.get_server_types_dir()}'")
 
-        @cls.add_command(["getcontrollers", "printcontrollers"], ignore_chars=ignore)
+        @cls.add_command(["getcontrollers", "printcontrollers", "listcontrollers", "controllers"], ignore_chars=ignore)
         def get_server_names(self, handle, *args):
-            handle.print(", ".join(self.get_server_names()))
+            handle.print("\n".join([str(i[0] + 1) + ": " + i[1] for i in enumerate(self.get_server_names())]))
 
         @cls.add_command(["reloadcontrollers"], ignore_chars=ignore)
         def reload_all_controllers(self, handle, *args):
@@ -87,18 +88,18 @@ class ControllerManager:
                 else:
                     handle.print("Error: Not a valid controller")
 
-        @cls.add_command(["reloadmanager"], ignore_chars=ignore)
+        @cls.add_command(["reloadmanager", "rmanager"], ignore_chars=ignore)
         def reload_manager(self, handle, *args):
             self.reload()
 
-        @cls.add_command(["createserver"], ignore_chars=ignore)
+        @cls.add_command(["createserver", "makeserver", "createinstance", "makeinstance"], ignore_chars=ignore)
         def create_instance(self, handle, *args):
             if len(args) > 1:
                 if self.create_instance(args[0], args[1], *args):
                     handle.print(f"Created instance of {args[0]} with name {args[1]}")
             handle.print("Error: invalid arguments")
 
-        @cls.add_command(["removeinstance"], ignore_chars=ignore)
+        @cls.add_command(["removeinstance", "deleteinstance"], ignore_chars=ignore) # (TODO) makesure this cant happen while server is on
         def remove_instance(self, handle, *args):
             if len(args) > 1:
                 if self.remove_instance(args[0], args[1]):
@@ -106,21 +107,21 @@ class ControllerManager:
                     return
             handle.print("Error: invalid arguments")
 
-        @cls.add_command(["saveinstances"], ignore_chars=ignore)
+        @cls.add_command(["saveinstances", 'saveservers'], ignore_chars=ignore)
         def save(self, handle, *args):
             if self.save_instances_to_file():
                 handle.print("Saved instances to file")
             else:
                 handle.print("Failed to save instances to file")
 
-        @cls.add_command(["loadinstances"], ignore_chars=ignore)
+        @cls.add_command(["loadinstances", "loadservers"], ignore_chars=ignore)
         def load(self, handle, *args):
             if self.load_instances_from_file():
                 handle.print("Loaded instances from file")
             else:
                 handle.print("Failed to load instances from file")
 
-        @cls.add_command(["listallinstances", "printinstances"], ignore_chars=ignore)
+        @cls.add_command(["listinstances", "printinstances", "instances", "servers"], ignore_chars=ignore)
         def list_instances(self, handle, *args):
             out = []
 
@@ -150,6 +151,24 @@ class ControllerManager:
             else:
                 m.start()
                 handle.print(f"Starting {args[0]}/{args[1]}")
+
+        @cls.add_command(["stop"], ignore_chars=ignore)
+        def start_instance(self, handle, *args):
+            if len(args) < 2:
+                handle.print("Error: Requires 2 arguments")
+                return False
+            if args[0] not in self.get_server_names():
+                handle.print(f"Error: Cannot find controller with name: {args[0]}")
+                return False
+            m = self.get_instance_from_type_and_name(args[0], args[1])
+            if not m:
+                handle.print(f"Error: Cannot find instance with name: {args[1]}")
+
+            if not m.get_running():
+                handle.print(f"{args[0]}/{args[1]} is not running")
+            else:
+                m.stop()
+                handle.print(f"Stopping {args[0]}/{args[1]}")
 
     # </editor-fold>
 
@@ -201,8 +220,10 @@ class ControllerManager:
         return self.server_types[server_type]["module"].run_class_command(name, user, *args, **kwargs)
 
     def run_command_on_server_instance(self, server_type, controller_name, name, user, *args, **kwargs):
-        if server_type not in self.server_types:
-            return False
+        instance = self.get_instance_from_type_and_name(server_type, controller_name)
+        if instance:
+            return instance.run_command(name, user, *args, **kwargs)
+        return False
 
     def set_server_types_dir(self, dir_):
         self.server_types_dir = dir_
@@ -356,3 +377,16 @@ class ControllerManager:
                 items = instances.get_queue()
                 for item in items:
                     self.print_all(item)
+
+    def close_instances(self):
+        for cont in self.instances:
+            for ins in self.instances[cont]:
+                ins.stop()
+
+        running = True
+        while running:
+            time.sleep(0.1)
+            running = False
+            for cont in self.instances:
+                for ins in self.instances[cont]:
+                    running = running or ins.get_running()
