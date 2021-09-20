@@ -10,6 +10,8 @@ import os
 import sys
 
 
+# add server.properties write each time before server boot in case info changed
+
 def main():
 
     # <editor-fold desc="File Paths">

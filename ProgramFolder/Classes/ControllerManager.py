@@ -3,6 +3,7 @@ from functions import module_from_file, remove_chars
 import inspect
 import json
 import time
+from PortHandler import PortHandler
 
 
 class ControllerManager:
@@ -100,12 +101,25 @@ class ControllerManager:
                     return True
             handle.print("Error: invalid arguments")
 
-        @cls.add_command(["removeinstance", "deleteinstance"], ignore_chars=ignore) # (TODO) makesure this cant happen while server is on
+        @cls.add_command(["removeinstance", "deleteinstance", "removeserver", "deleteserver"],
+                         ignore_chars=ignore)
         def remove_instance(self, handle, *args):
-            if len(args) > 1:
+            if len(args) < 2:
+                handle.print("Error: Requires 2 arguments")
+                return False
+            if args[0] not in self.get_server_names():
+                handle.print(f"Error: Cannot find controller with name: {args[0]}")
+                return False
+            m = self.get_instance_from_type_and_name(args[0], args[1])
+            if not m:
+                handle.print(f"Error: Cannot find instance with name: {args[1]}")
+                return False
+            if m.get_running():
+                handle.print(f"Error: Cannot delete {args[0]}/{args[1]} while it is already running")
+            else:
                 if self.remove_instance(args[0], args[1]):
                     handle.print(f"Removed instance of {args[0]} with name {args[1]}")
-                    return
+                    return True
             handle.print("Error: invalid arguments")
 
         @cls.add_command(["saveinstances", 'saveservers'], ignore_chars=ignore)
@@ -146,15 +160,34 @@ class ControllerManager:
             m = self.get_instance_from_type_and_name(args[0], args[1])
             if not m:
                 handle.print(f"Error: Cannot find instance with name: {args[1]}")
+                return False
 
             if m.get_running():
-                handle.print(f"{args[0]}/{args[1]} is already running")
+                handle.print(f"Error: {args[0]}/{args[1]} is already running")
             else:
                 m.start()
                 handle.print(f"Starting {args[0]}/{args[1]}")
 
+        @cls.add_command(["setup"], ignore_chars=ignore)
+        def setup_instance(self, handle, *args):
+            if len(args) < 2:
+                handle.print("Error: Requires 2 arguments")
+                return False
+            if args[0] not in self.get_server_names():
+                handle.print(f"Error: Cannot find controller with name: {args[0]}")
+                return False
+            m = self.get_instance_from_type_and_name(args[0], args[1])
+            if not m:
+                handle.print(f"Error: Cannot find instance with name: {args[1]}")
+
+            if m.get_running():
+                handle.print(f"Error: {args[0]}/{args[1]} is running")
+            else:
+                m.setup()
+                handle.print(f"Setting up {args[0]}/{args[1]}")
+
         @cls.add_command(["stop"], ignore_chars=ignore)
-        def start_instance(self, handle, *args):
+        def stop_instance(self, handle, *args):
             if len(args) < 2:
                 handle.print("Error: Requires 2 arguments")
                 return False
@@ -166,7 +199,7 @@ class ControllerManager:
                 handle.print(f"Error: Cannot find instance with name: {args[1]}")
 
             if not m.get_running():
-                handle.print(f"{args[0]}/{args[1]} is not running")
+                handle.print(f"Error: {args[0]}/{args[1]} is not running")
             else:
                 m.stop()
                 handle.print(f"Stopping {args[0]}/{args[1]}")
@@ -178,6 +211,7 @@ class ControllerManager:
         self.objects.append(self)
 
         self.console = ConsoleObj  # FOR DEBUG, remove later
+        self.port_handler = PortHandler
         self.server_types_dir = ""
         self.server_types = {}  # format {type: {"module": module, "file": filename}}
 
@@ -311,8 +345,7 @@ class ControllerManager:
             return
         if name in self.get_names_of_server_from_type(type_):
             return
-        m = self.server_types[type_]["module"](name, *args)
-        m.set_data(data)
+        m = self.server_types[type_]["module"](name, data, self.port_handler(), *args)
         return m
 
     def create_instance(self, type_, name, *args):
@@ -328,8 +361,10 @@ class ControllerManager:
 
         for index, instance in enumerate(self.instances[type_]):
             if instance.get_name() == name:
-                del self.instances[type_][index]
-                return True
+                if not instance.get_running():
+                    instance.remove()
+                    del self.instances[type_][index]
+                    return True
         return False
 
     def load_instances_from_file(self):

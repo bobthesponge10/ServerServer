@@ -1,7 +1,7 @@
 from functions import remove_chars
 from queue import Queue, Empty
 import os
-
+import shutil
 
 class BaseController:
     commands = []
@@ -78,33 +78,36 @@ class BaseController:
             user.print("TestSuccess")
     # </editor-fold>
 
-    def __init__(self, name, *args):
+    def __init__(self, name, data, port_handler, *args):
         self.parent_object = BaseController
         self.objects.append(self)
         self.name = name
+        self.port_handler = port_handler
         self.base_dir = self.manager.get_server_dir()
 
         self.path = os.path.join(self.base_dir, self.type, self.name)
         if not os.path.isdir(self.path):
             os.makedirs(self.path)
 
-        self.data = None
+        self._data = data
 
         self.running = False
 
         self.queue = Queue()
 
     def remove(self):
-        self.parent_object.remove(self)
+        self.parent_object.objects.remove(self)
+        shutil.rmtree(self.path)
+        self.port_handler.remove()
 
     def set_parent_object(self, parent_object):
         self.parent_object = parent_object
 
     def set_data(self, data):
-        self.data = data
+        self._data = data
 
     def get_data(self):
-        return self.data
+        return self._data
 
     def get_name(self):
         return self.name
@@ -143,3 +146,6 @@ class BaseController:
 
     def stop(self):
         raise NotImplemented
+
+    def setup(self):
+        pass
