@@ -3,7 +3,6 @@ from functions import module_from_file, remove_chars
 import inspect
 import json
 import time
-from PortHandler import PortHandler
 
 
 class ControllerManager:
@@ -97,6 +96,7 @@ class ControllerManager:
         def create_instance(self, handle, *args):
             if len(args) > 1:
                 if self.create_instance(args[0], args[1], *args[2:]):
+
                     handle.print(f"Created instance of {args[0]} with name {args[1]}")
                     return True
             handle.print("Error: invalid arguments")
@@ -206,12 +206,12 @@ class ControllerManager:
 
     # </editor-fold>
 
-    def __init__(self, ConsoleObj, handle_list):
+    def __init__(self, ConsoleObj, handle_list, port_handler):
         self.parent_object = type(self)
         self.objects.append(self)
 
         self.console = ConsoleObj  # FOR DEBUG, remove later
-        self.port_handler = PortHandler
+        self.port_handler = port_handler
         self.server_types_dir = ""
         self.server_types = {}  # format {type: {"module": module, "file": filename}}
 

@@ -19,28 +19,28 @@ class Controller(BaseController):
         self.minecraft_jar_versions = []
         self.load_minecraft_jar_versions()
 
-        if len(args) > 0:
-            self.version = args[0]
+        if len(args) >= 4:
+            self.version = args[4]
         else:
             self.set_version_to_latest()
 
         self.jar_name = "server.jar"
         self.memory_to_use = 4096
         self.world_file = "world"
-        self.port = self.port_handler.request_port(25565)
+        self.port = 25565
 
         if not self.get_data():
             self.save_data()
         else:
             self.data = self.get_data()
-            self.port = self.port_handler.request_port(self.data.get("port", self.port))
+            self.port = self.data.get("port", self.port)
             self.jar_name = self.data.get("jar_name", self.jar_name)
             self.world_file = self.data.get("world_file", self.world_file)
             self.version = self.data.get("version", self.version)
             self.memory_to_use = self.data.get("memory_to_use", self.memory_to_use)
+        self.port = self.port_handler.request_port(self.port)
 
         self.property_file_name = "server.properties"
-        self.add_to_queue(self.port)
 
     def save_data(self):
         self.data = {"port": self.port,
@@ -51,7 +51,6 @@ class Controller(BaseController):
         self.set_data(self.data)
 
     def run(self, just_setup=False):
-        self.add_to_queue(self.version)
         try:
             self.running = True
             self.initial_setup()
@@ -59,12 +58,14 @@ class Controller(BaseController):
                 self.run_server()
             self.running = False
         except Exception as e:
-            self.add_to_queue(str(e))
+            #self.add_to_queue(str(e))
+            self.manager.console.stop()
+            raise e
 
     def run_server(self):
         old_dir = os.path.abspath(os.getcwd())
         os.chdir(self.path)
-        self.add_to_queue("Starting server")
+        self.add_to_queue(f"Starting server at port: {self.port}")
         self.process = subprocess.Popen(
             f"java -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -102,18 +103,11 @@ class Controller(BaseController):
         old_dir = os.path.abspath(os.getcwd())
         os.chdir(self.path)
 
-        base_properties = {"server-port": self.port, "level-name": self.world_file}
-
         if not os.path.isfile(self.jar_name):
             self.add_to_queue("Jar file missing")
             self.download_jar()
 
-        file = open(self.property_file_name, "w")
-        data = []
-        for i in base_properties:
-            data.append(i + "=" + str(base_properties[i]))
-        file.write("\n".join(data))
-        file.close()
+        self.write_properties()
 
         if not os.path.isfile("eula.txt"):
             self.add_to_queue("Running setup for eula")
@@ -146,10 +140,42 @@ class Controller(BaseController):
         os.chdir(old_dir)
         self.add_to_queue("Finished initial setup")
 
+    def write_properties(self):
+        data = []
+        out = []
+        properties = {"server-port": self.port, "level-name": self.world_file}
+        if os.path.isfile(self.property_file_name):
+            file = open(self.property_file_name, "r")
+            data = file.read().split("")
+            file.close()
+
+        for line in data:
+            spl = line.split("=")
+            if len(spl) > 1:
+                key = spl[0]
+                val = spl[1]
+                if key in properties:
+                    val = properties[key]
+                    del properties[key]
+                out.append(f"{key}={val}")
+            else:
+                out.append(line)
+
+        for key in properties:
+            out.append(f"{key}={properties[key]}")
+
+        data = "\n".join(out)
+
+        file = open(self.property_file_name, "w")
+        file.write(data)
+        file.close()
+
     def download_jar(self):
         if not os.path.isfile(self.jar_name):
             self.add_to_queue("Downloading jar file")
-            url = [i for i in self.minecraft_jar_versions if i.get("id") == self.version][0].get("url")
+            list_ = [i for i in self.minecraft_jar_versions if i.get("id") == self.version]
+            list_.append({})
+            url = list_[0].get("url")
             raw = requests.get(url).text
             j = json.loads(raw)
 

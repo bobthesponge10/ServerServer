@@ -263,5 +263,3 @@ class Server(Thread):
     def log(self, string):
         if self.logger:
             self.logger(string)
-        else:
-            print(string)

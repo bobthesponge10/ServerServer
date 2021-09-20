@@ -1,16 +1,14 @@
 from Classes import ConsoleUI
 from Classes import UserData
 from Classes import Server
-from Classes import functions
 from Classes import ControllerManager
 from Classes import UserHandle
 from Classes import functions
+from Classes import PortHandler
 import time
 import os
 import sys
 
-
-# add server.properties write each time before server boot in case info changed
 
 def main():
 
@@ -28,7 +26,7 @@ def main():
     Console = ConsoleUI()
     UserInfo = UserData()
     MainServer = Server()
-    Manager = ControllerManager(Console, user_handles)
+    Manager = ControllerManager(Console, user_handles, PortHandler)
 
     Console.start()
     Console.update_prefix("->")
@@ -47,14 +45,30 @@ def main():
     Console.print(f"Loaded {len(UserInfo.get_users())} user(s) from '{userInfoFile}'")
     Console.print(f"Loaded {len(Manager.get_server_names())} server type(s) from '{serverInfoDir}'")
 
-    running = True
+    server_port_handler = PortHandler()
+    MainServer.set_port(server_port_handler.request_port(10000))
+    MainServer.start()
+    Console.print(f"Hosted socket server at {MainServer.get_ip()}:{MainServer.get_port()}")
 
     ServerHandle = UserHandle(Console, server=True)
-
     user_handles.append(ServerHandle)
 
+    running = True
     while running:
         time.sleep(0.1)
+
+        for i in MainServer.get_new_connections():
+            connection = MainServer.get_client_from_id(i)
+            user_handle = UserHandle(connection, id_=i)
+            user_handles.append(user_handle)
+            Manager.print_all(f"Got connection from {connection.get_addr()}")
+
+        for i in MainServer.get_old_connections():
+            for h in user_handles:
+                if h.get_id() == i:
+                    user_handles.remove(h)
+                    Manager.print_all(f"Lost connection from {h.get_obj().get_addr()}")
+                    break
 
         Manager.flush_servers()
 
@@ -94,8 +108,8 @@ def main():
                             elif len(path) == 2:
                                 module_name = path[0]
                                 controller = path[1]
-                                Manager.run_command_on_server_instance(module_name, controller, actual_command,
-                                                                                                        user, *args)
+                                Manager.run_command_on_server_instance(
+                                    module_name, controller, actual_command, user, *args)
                         else:
                             Manager.run_command(command, user, *args)
 
@@ -112,9 +126,15 @@ def main():
         time.sleep(0.25)
 
     Console.print("Goodbye")
-
+    time.sleep(0.5)
     Console.stop()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        c = ConsoleUI()
+        c.start()
+        c.stop()
+        raise e
