@@ -10,7 +10,7 @@ class ControllerManager:
     objects = []
     file = ""
 
-    # <editor-fold desc="Class methods">
+    # <editor-fold desc="Class/Static methods">
     @classmethod
     def get_objects(cls):
         return cls.objects
@@ -26,12 +26,13 @@ class ControllerManager:
         cls.objects.remove(obj)
 
     @classmethod
-    def add_command(cls, keywords, ignore_chars=None):
+    def add_command(cls, keywords, ignore_chars=None, global_function=False):
         if not ignore_chars:
             ignore_chars = []
 
         def f(func):
-            cls.commands.append({"keywords": keywords, "function": func, "ignore": ignore_chars})
+            cls.commands.append({"keywords": keywords, "function": func, "ignore": ignore_chars,
+                                 "global": global_function})
             return func
 
         return f
@@ -45,6 +46,16 @@ class ControllerManager:
     @classmethod
     def set_file(cls, file):
         cls.file = file
+
+    @staticmethod
+    def join_args(args_a, args_b):
+        out = []
+        for i in range(max(len(args_a), len(args_b))):
+            if len(args_b) > i and args_b[i]:
+                out.append(args_b[i])
+            elif len(args_a) > i and args_a[i]:
+                out.append(args_a[i])
+        return out
 
     # </editor-fold>
 
@@ -63,26 +74,29 @@ class ControllerManager:
         def shutdown(self, handle, *args):
             handle.print("Not implemented yet")
 
-        @cls.add_command(["loadcontrollers", "loadnewcontrollers", "newcontrollers"], ignore_chars=ignore)
-        def load_server_types(self, handle, *args):
+        @cls.add_command(["loadcontrollers", "loadnewcontrollers", "newcontrollers"],
+                         ignore_chars=ignore, global_function=True)
+        def load_server_types(self, handle, *args, **kwargs):
             l = len(self.get_server_names())
             self.load_server_types()
             l = len(self.get_server_names()) - l
             handle.print(f"Loaded {l} additional controller(s) from '{self.get_server_types_dir()}'")
 
-        @cls.add_command(["getcontrollers", "printcontrollers", "listcontrollers", "controllers"], ignore_chars=ignore)
-        def get_server_names(self, handle, *args):
+        @cls.add_command(["getcontrollers", "printcontrollers", "listcontrollers", "controllers"],
+                         ignore_chars=ignore, global_function=True)
+        def get_server_names(self, handle, *args, **kwargs):
             handle.print("\n".join([str(i[0] + 1) + ": " + i[1] for i in enumerate(self.get_server_names())]))
 
-        @cls.add_command(["reloadcontrollers"], ignore_chars=ignore)
-        def reload_all_controllers(self, handle, *args):
+        @cls.add_command(["reloadcontrollers"], ignore_chars=ignore, global_function=True)
+        def reload_all_controllers(self, handle, *args, **kwargs):
             for i in self.get_server_names():
                 self.console.print("Reloading " + i)
                 self.reload_type(i)
             handle.print("Finished Reloading all controllers")
 
-        @cls.add_command(["reloadcontroller"], ignore_chars=ignore)
-        def reload_controller(self, handle, *args):
+        @cls.add_command(["reloadcontroller"], ignore_chars=ignore, global_function=True)
+        def reload_controller(self, handle, *args, module_name="", **kwargs):
+            args = self.module_name(args, [module_name])
             if len(args) < 1:
                 handle.print("Error: Please specify a controller")
             else:
@@ -92,12 +106,14 @@ class ControllerManager:
                 else:
                     handle.print("Error: Not a valid controller")
 
-        @cls.add_command(["reloadmanager", "rmanager"], ignore_chars=ignore)
-        def reload_manager(self, handle, *args):
+        @cls.add_command(["reloadmanager", "rmanager"], ignore_chars=ignore, global_function=True)
+        def reload_manager(self, handle, *args, **kwargs):
             self.reload()
 
-        @cls.add_command(["createserver", "makeserver", "createinstance", "makeinstance"], ignore_chars=ignore)
-        def create_instance(self, handle, *args):
+        @cls.add_command(["createserver", "makeserver", "createinstance", "makeinstance"],
+                         ignore_chars=ignore, global_function=True)
+        def create_instance(self, handle, *args, module_name="", **kwargs):
+            args = self.merge_args(args, [module_name])
             if len(args) > 1:
                 if self.create_instance(args[0], args[1], *args[2:]):
 
@@ -107,7 +123,8 @@ class ControllerManager:
 
         @cls.add_command(["removeinstance", "deleteinstance", "removeserver", "deleteserver"],
                          ignore_chars=ignore)
-        def remove_instance(self, handle, *args):
+        def remove_instance(self, handle, *args, module_name="", controller="", **kwargs):
+            args = self.merge_args(args, [module_name, controller])
             if len(args) < 2:
                 handle.print("Error: Requires 2 arguments")
                 return False
@@ -126,25 +143,28 @@ class ControllerManager:
                     return True
             handle.print("Error: invalid arguments")
 
-        @cls.add_command(["saveinstances", 'saveservers'], ignore_chars=ignore)
-        def save(self, handle, *args):
+        @cls.add_command(["saveinstances", 'saveservers'], ignore_chars=ignore, global_function=True)
+        def save(self, handle, *args, **kwargs):
             if self.save_instances_to_file():
                 handle.print("Saved instances to file")
             else:
                 handle.print("Failed to save instances to file")
 
-        @cls.add_command(["loadinstances", "loadservers"], ignore_chars=ignore)
-        def load(self, handle, *args):
+        @cls.add_command(["loadinstances", "loadservers"], ignore_chars=ignore, global_function=True)
+        def load(self, handle, *args, **kwargs):
             if self.load_instances_from_file():
                 handle.print("Loaded instances from file")
             else:
                 handle.print("Failed to load instances from file")
 
-        @cls.add_command(["listinstances", "printinstances", "instances", "servers"], ignore_chars=ignore)
-        def list_instances(self, handle, *args):
+        @cls.add_command(["listinstances", "printinstances", "instances", "servers"],
+                         ignore_chars=ignore, global_function=True)
+        def list_instances(self, handle, *args, module_name="", **kwargs):
             out = []
 
             for i in self.get_server_names():
+                if module_name and module_name != i:
+                    continue
                 instances = self.get_names_of_server_from_type(i)
                 for name in instances:
                     out.append(f"{i}: {name}")
@@ -153,8 +173,9 @@ class ControllerManager:
             else:
                 handle.print("\n".join(out))
 
-        @cls.add_command(["start"], ignore_chars=ignore)
-        def start_instance(self, handle, *args):
+        @cls.add_command(["start"], ignore_chars=ignore, global_function=True)
+        def start_instance(self, handle, *args, module_name="", controller="", **kwargs):
+            args = self.join_args(args, [module_name, controller])
             if len(args) < 2:
                 handle.print("Error: Requires 2 arguments")
                 return False
@@ -172,8 +193,9 @@ class ControllerManager:
                 m.start()
                 handle.print(f"Starting {args[0]}/{args[1]}")
 
-        @cls.add_command(["setup"], ignore_chars=ignore)
-        def setup_instance(self, handle, *args):
+        @cls.add_command(["setup"], ignore_chars=ignore, global_function=True)
+        def setup_instance(self, handle, *args, module_name="", controller="", **kwargs):
+            args = self.join_args(args, [module_name, controller])
             if len(args) < 2:
                 handle.print("Error: Requires 2 arguments")
                 return False
@@ -190,8 +212,9 @@ class ControllerManager:
                 m.setup()
                 handle.print(f"Setting up {args[0]}/{args[1]}")
 
-        @cls.add_command(["stop"], ignore_chars=ignore)
-        def stop_instance(self, handle, *args):
+        @cls.add_command(["stop"], ignore_chars=ignore, global_function=True)
+        def stop_instance(self, handle, *args, module_name="", controller="", **kwargs):
+            args = self.join_args(args, [module_name, controller])
             if len(args) < 2:
                 handle.print("Error: Requires 2 arguments")
                 return False
@@ -243,15 +266,20 @@ class ControllerManager:
         return True
 
     def run_command(self, name, handle, *args, **kwargs):
+        path_given = "module_name" in kwargs or "controller" in kwargs
         for i in self.parent_object.commands:
             temp_name = remove_chars(name, i["ignore"])
             if temp_name.lower() in i["keywords"]:
+                if path_given:
+                    if not i["global"]:
+                        continue
                 try:
-                    return i["function"](self, handle, *args, **kwargs)
+                    i["function"](self, handle, *args, **kwargs)
+                    return True
                 except Exception as e:
                     handle.print(f"Error running {name}, Error: {e.__repr__()}")
-                    return ""
-        return ""
+                    return False
+        return False
 
     def run_command_on_server_type(self, server_type, name, user, *args, **kwargs):
         if server_type not in self.server_types:

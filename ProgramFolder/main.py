@@ -11,7 +11,7 @@ import sys
 
 # STUFF TO DO
 # commands/documentation
-# type scripting
+# typing
 # user login
 # user chat functionality
 # permissions
@@ -19,7 +19,6 @@ import sys
 # user focus on specific server
 # something with logging
 # help commands
-# using global commands in focus
 # add more servers (factorio)
 # upnp support
 # cloudflare api integration
@@ -27,10 +26,12 @@ import sys
 # auto download java env
 # discord bot controller
 # config file, things like autorun commands, file paths, etc
+# hard exit servers in the event they hang/crash
 
 # ---minecraft controller stuff
 # edit Settings
 # whitelist stuff
+# manage bans
 # output parsing
 # error handling
 # change version
@@ -113,12 +114,7 @@ def main():
         for user in user_handles:
             items = user.get_input()
             for i_ in items:
-                if i_.lower() == "exit":
-                    running = False
-                elif i_.lower() == "clear":
-                    if user.is_server():
-                        Console.clear_console()
-                elif len(i_) > 0:
+                if len(i_) > 0:
                     if user.is_server():
                         user.print(">" + i_)
 
@@ -126,6 +122,13 @@ def main():
                     if len(parsed) > 0:
                         command = parsed[0]
                         args = parsed[1:]
+
+                        if user.is_server() and command.lower() == "exit":
+                            running = False
+                        elif user.is_server() and command.lower() == "clear":
+                            Console.clear_console()
+
+                        result = False
 
                         if command.startswith("/"):
                             spl1 = command[1:].split(":")
@@ -135,15 +138,25 @@ def main():
 
                             if len(path) == 1:
                                 module_name = path[0]
-                                Manager.run_command_on_server_type(module_name, actual_command, user, *args)
+                                result = Manager.run_command_on_server_type(module_name, actual_command, user, *args)
+                                if not result:
+                                    result = Manager.run_command(actual_command, user, *args,
+                                                                 module_name=module_name)
 
                             elif len(path) == 2:
                                 module_name = path[0]
                                 controller = path[1]
-                                Manager.run_command_on_server_instance(
+                                result = Manager.run_command_on_server_instance(
                                     module_name, controller, actual_command, user, *args)
+                                if not result:
+                                    result = Manager.run_command(actual_command, user, *args,
+                                                                 module_name=module_name, controller=controller)
+
                         else:
-                            Manager.run_command(command, user, *args)
+                            result = Manager.run_command(command, user, *args)
+
+                        if not result:
+                            user.print("Error: unknown command")
 
     Console.print("Closing Server Instances")
     Manager.close_instances()

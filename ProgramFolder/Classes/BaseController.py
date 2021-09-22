@@ -54,11 +54,12 @@ class BaseController:
             temp_name = remove_chars(name, i["ignore"])
             if temp_name.lower() in i["keywords"]:
                 try:
-                    return i["function"](cls, handle, *args, **kwargs)
+                    i["function"](cls, handle, *args, **kwargs)
+                    return True
                 except Exception as e:
                     handle.print(f"Error running {name}, Error: {e.__repr__()}")
-                    return ""
-        return ""
+                    return False
+        return False
 
     @classmethod
     def set_manager(cls, manager):
@@ -77,6 +78,7 @@ class BaseController:
         @cls.add_class_command(["test"])
         def test_command(cls_, user, *args):
             user.print("TestSuccess")
+            return True
     # </editor-fold>
 
     def __init__(self, name, data, port_handler, *args):
@@ -124,14 +126,15 @@ class BaseController:
             temp_name = remove_chars(name, i["ignore"])
             if temp_name.lower() in i["keywords"]:
                 try:
-                    return i["function"](self, handle, *args, **kwargs)
+                    i["function"](self, handle, *args, **kwargs)
+                    return True
                 except Exception as e:
                     handle.print(f"Error running {name}, Error: {e.__repr__()}")
-                    return ""
-        return ""
+                    return False
+        return False
 
     def add_to_queue(self, item):
-        self.queue.put(item, block=True, timeout=-1)
+        self.queue.put(f"[{self.type}/{self.name}]:{item}", block=True, timeout=-1)
 
     def get_queue(self):
         out = []

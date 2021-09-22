@@ -20,7 +20,7 @@ class Controller(BaseController):
         self.load_minecraft_jar_versions()
 
         if len(args) >= 4:
-            self.version = args[4]
+            self.version = args[3]
         else:
             self.set_version_to_latest()
 
@@ -58,9 +58,7 @@ class Controller(BaseController):
                 self.run_server()
             self.running = False
         except Exception as e:
-            #self.add_to_queue(str(e))
-            self.manager.console.stop()
-            raise e
+            self.add_to_queue("Error running server:" + str(e))
 
     def run_server(self):
         old_dir = os.path.abspath(os.getcwd())
@@ -99,13 +97,14 @@ class Controller(BaseController):
             self.thread = Thread(target=self.run, args=(True,), daemon=True)
             self.thread.start()
 
-    def initial_setup(self):  # TODO: Handle any failure that may occur when setting up server
+    def initial_setup(self):
         old_dir = os.path.abspath(os.getcwd())
         os.chdir(self.path)
 
         if not os.path.isfile(self.jar_name):
             self.add_to_queue("Jar file missing")
-            self.download_jar()
+            if not self.download_jar():
+                return False
 
         self.write_properties()
 
@@ -117,6 +116,9 @@ class Controller(BaseController):
             sp.stdin.write(b"stop\n")
             sp.stdin.flush()
             sp.communicate()
+            if sp.poll() != 0:
+                self.add_to_queue("Error running jar file, is the correct version of java installed?")
+                return False
 
         if os.path.isfile("eula.txt"):
             eula = open("eula.txt", "r")
@@ -139,6 +141,7 @@ class Controller(BaseController):
         p.communicate()
         os.chdir(old_dir)
         self.add_to_queue("Finished initial setup")
+        return True
 
     def write_properties(self):
         data = []
@@ -170,29 +173,34 @@ class Controller(BaseController):
         file.write(data)
         file.close()
 
+    def get_download_url(self):
+        list_ = [i for i in self.minecraft_jar_versions if i.get("id") == self.version]
+        if len(list_) == 0:
+            return None
+        url = list_[0].get("url")
+        if not url:
+            return None
+        raw = requests.get(url).text
+        j = json.loads(raw)
+        server = j.get("downloads", {}).get("server")
+        if not server:
+            return None
+        download_url = server.get("url")
+        if not download_url:
+            return None
+        return download_url
+
     def download_jar(self):
         if not os.path.isfile(self.jar_name):
             self.add_to_queue("Downloading jar file")
-            list_ = [i for i in self.minecraft_jar_versions if i.get("id") == self.version]
-            list_.append({})
-            url = list_[0].get("url")
-            raw = requests.get(url).text
-            j = json.loads(raw)
+            download_url = self.get_download_url()
 
-            server = j.get("downloads", {}).get("server")
-            if not server:
+            if not download_url:
                 self.add_to_queue(f"Could not find server jar with version: {self.version}, "
                                   f"using latest version instead")
                 self.set_version_to_latest()
-                url = [i for i in self.minecraft_jar_versions if i.get("id") == self.version][0].get("url")
-                raw = requests.get(url).text
-                j = json.loads(raw)
-                server = j.get("downloads", default={}).get("server")
-                if not server:
-                    self.add_to_queue("Failed to download server")
-                    return False
+                download_url = self.get_download_url()
 
-            download_url = server.get("url")
             if not download_url:
                 self.add_to_queue("Failed to download server")
                 return False
@@ -208,6 +216,7 @@ class Controller(BaseController):
             except IOError:
                 self.add_to_queue("Failed to download server")
                 return False
+            return True
 
     def load_minecraft_jar_versions(self):
         raw = requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").text
