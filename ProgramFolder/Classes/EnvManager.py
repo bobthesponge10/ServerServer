@@ -91,7 +91,7 @@ class EnvManager:
         return False
 
     def java_is_installed(self):
-        java_path = os.path.join(self.env_path, self.java_path)
+        java_path = os.path.join(self.env_path, self.java_path, self.java_exe_path)
         return os.path.isfile(java_path)
 
     def get_java_executor(self):

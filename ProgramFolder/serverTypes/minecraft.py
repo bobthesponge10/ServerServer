@@ -60,12 +60,11 @@ class Controller(BaseController):
                 self.run_server()
             self.running = False
         except Exception as e:
-            running = False
+            self.running = False
             self.add_to_queue("Error running server:" + str(e))
 
     def run_server(self):
         java_path = self.get_java_path()
-        self.add_to_queue(java_path)
         old_dir = os.path.abspath(os.getcwd())
         os.chdir(self.path)
         self.add_to_queue(f"Starting server at port: {self.port}")
@@ -104,7 +103,6 @@ class Controller(BaseController):
 
     def initial_setup(self):
         java_path = self.get_java_path()
-        self.add_to_queue(java_path)
         old_dir = os.path.abspath(os.getcwd())
         os.chdir(self.path)
 
