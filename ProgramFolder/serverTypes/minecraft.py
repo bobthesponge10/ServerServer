@@ -146,7 +146,7 @@ class Controller(BaseController):
         properties = {"server-port": self.port, "level-name": self.world_file}
         if os.path.isfile(self.property_file_name):
             file = open(self.property_file_name, "r")
-            data = file.read().split("")
+            data = file.read().split("\n")
             file.close()
 
         for line in data:

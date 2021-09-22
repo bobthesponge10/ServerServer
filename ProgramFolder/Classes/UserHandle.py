@@ -16,6 +16,9 @@ class UserHandle:
         packets = self.obj.get_all_packets()
         return [i["text"] for i in packets if i["type"] == "text"]
 
+    def is_server(self):
+        return self.server
+
     def get_obj(self):
         return self.obj
 

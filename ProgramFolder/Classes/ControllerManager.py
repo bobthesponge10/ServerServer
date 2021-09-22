@@ -1,5 +1,5 @@
 import os
-from functions import module_from_file, remove_chars
+from .functions import module_from_file, remove_chars
 import inspect
 import json
 import time
@@ -58,6 +58,10 @@ class ControllerManager:
         @cls.add_command(["bogos?", "bogos"], ignore_chars=ignore)
         def binted(self, handle, *args):
             handle.print("binted")
+
+        @cls.add_command(["shutdown"], ignore_chars=ignore)
+        def shutdown(self, handle, *args):
+            handle.print("Not implemented yet")
 
         @cls.add_command(["loadcontrollers", "loadnewcontrollers", "newcontrollers"], ignore_chars=ignore)
         def load_server_types(self, handle, *args):

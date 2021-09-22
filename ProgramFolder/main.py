@@ -9,6 +9,33 @@ import time
 import os
 import sys
 
+# STUFF TO DO
+# commands/documentation
+# type scripting
+# user login
+# user chat functionality
+# permissions
+# user filter view
+# user focus on specific server
+# something with logging
+# help commands
+# using global commands in focus
+# add more servers (factorio)
+# upnp support
+# cloudflare api integration
+# run as admin
+# auto download java env
+# discord bot controller
+# config file, things like autorun commands, file paths, etc
+
+# ---minecraft controller stuff
+# edit Settings
+# whitelist stuff
+# output parsing
+# error handling
+# change version
+# backup/change worlds
+
 
 def main():
 
@@ -17,6 +44,7 @@ def main():
     serverInfoDir = "ProgramFolder/serverTypes/"
     instanceDataFile = "ProgramFolder/data/controllerInstances.json"
     serverDir = "ServerFolder"
+    envDir = "ProgramFolder/Env"
     # </editor-fold>
 
     os.chdir(os.path.dirname(os.path.dirname(__file__)))
@@ -55,7 +83,7 @@ def main():
 
     running = True
     while running:
-        time.sleep(0.1)
+        time.sleep(0.01)
 
         for i in MainServer.get_new_connections():
             connection = MainServer.get_client_from_id(i)
@@ -87,8 +115,12 @@ def main():
             for i_ in items:
                 if i_.lower() == "exit":
                     running = False
+                elif i_.lower() == "clear":
+                    if user.is_server():
+                        Console.clear_console()
                 elif len(i_) > 0:
-                    user.print(">" + i_)
+                    if user.is_server():
+                        user.print(">" + i_)
 
                     parsed = functions.parse_string_for_commands(i_)
                     if len(parsed) > 0:

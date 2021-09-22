@@ -202,6 +202,12 @@ class ConsoleUI(Thread):
                 self.input_cursor = limit
         self.hard_update_input()
 
+    def clear_console(self):
+        self.console_buffer = []
+        self.console_line = 0
+        self.console_display_line = 0
+        self.hard_update_console()
+
     def hard_update(self):
         self.hard_update_console()
         self.hard_update_input()

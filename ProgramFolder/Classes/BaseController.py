@@ -1,7 +1,8 @@
-from functions import remove_chars
+from .functions import remove_chars
 from queue import Queue, Empty
 import os
 import shutil
+
 
 class BaseController:
     commands = []
