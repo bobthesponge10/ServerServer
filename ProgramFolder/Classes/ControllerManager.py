@@ -1,5 +1,6 @@
 import os
 from .functions import module_from_file, remove_chars
+from .EnvManager import EnvManager
 import inspect
 import json
 import time
@@ -113,7 +114,7 @@ class ControllerManager:
         @cls.add_command(["createserver", "makeserver", "createinstance", "makeinstance"],
                          ignore_chars=ignore, global_function=True)
         def create_instance(self, handle, *args, module_name="", **kwargs):
-            args = self.merge_args(args, [module_name])
+            args = self.join_args(args, [module_name])
             if len(args) > 1:
                 if self.create_instance(args[0], args[1], *args[2:]):
 
@@ -124,7 +125,7 @@ class ControllerManager:
         @cls.add_command(["removeinstance", "deleteinstance", "removeserver", "deleteserver"],
                          ignore_chars=ignore)
         def remove_instance(self, handle, *args, module_name="", controller="", **kwargs):
-            args = self.merge_args(args, [module_name, controller])
+            args = self.join_args(args, [module_name, controller])
             if len(args) < 2:
                 handle.print("Error: Requires 2 arguments")
                 return False
@@ -233,7 +234,7 @@ class ControllerManager:
 
     # </editor-fold>
 
-    def __init__(self, ConsoleObj, handle_list, port_handler):
+    def __init__(self, ConsoleObj, handle_list, port_handler, env_path):
         self.parent_object = type(self)
         self.objects.append(self)
 
@@ -246,9 +247,14 @@ class ControllerManager:
         self.server_dir = ""
         self.instances = {}     # format {type: [instance1, instance2, ...]}
 
+        self.env_manager = EnvManager(env_path)
+
         self.handle_list = handle_list
 
         self.reload_needed = False
+
+    def get_env_manager(self):
+        return self.env_manager
 
     def reload(self):
         self.reload_needed = True

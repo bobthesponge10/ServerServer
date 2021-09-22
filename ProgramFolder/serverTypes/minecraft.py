@@ -16,6 +16,8 @@ class Controller(BaseController):
         self.thread = None
         self.process = None
 
+        self.env_manager = self.manager.get_env_manager()
+
         self.minecraft_jar_versions = []
         self.load_minecraft_jar_versions()
 
@@ -58,14 +60,17 @@ class Controller(BaseController):
                 self.run_server()
             self.running = False
         except Exception as e:
+            running = False
             self.add_to_queue("Error running server:" + str(e))
 
     def run_server(self):
+        java_path = self.get_java_path()
+        self.add_to_queue(java_path)
         old_dir = os.path.abspath(os.getcwd())
         os.chdir(self.path)
         self.add_to_queue(f"Starting server at port: {self.port}")
         self.process = subprocess.Popen(
-            f"java -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
+            f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         poll = self.process.poll()
 
@@ -98,6 +103,8 @@ class Controller(BaseController):
             self.thread.start()
 
     def initial_setup(self):
+        java_path = self.get_java_path()
+        self.add_to_queue(java_path)
         old_dir = os.path.abspath(os.getcwd())
         os.chdir(self.path)
 
@@ -110,13 +117,13 @@ class Controller(BaseController):
 
         if not os.path.isfile("eula.txt"):
             self.add_to_queue("Running setup for eula")
-            sp = subprocess.Popen(
-                f"java -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
+            self.process = subprocess.Popen(
+                f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            sp.stdin.write(b"stop\n")
-            sp.stdin.flush()
-            sp.communicate()
-            if sp.poll() != 0:
+            self.process.stdin.write(b"stop\n")
+            self.process.stdin.flush()
+            self.process.communicate()
+            if self.process.poll() != 0:
                 self.add_to_queue("Error running jar file, is the correct version of java installed?")
                 return False
 
@@ -134,7 +141,7 @@ class Controller(BaseController):
             eula.close()
 
         self.add_to_queue("Running initial setup")
-        p = subprocess.Popen(f"java -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
+        p = subprocess.Popen(f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.stdin.write(b"stop\n")
         p.stdin.flush()
@@ -229,6 +236,15 @@ class Controller(BaseController):
         j = json.loads(raw)
         version = j.get("latest").get("release")
         self.version = version
+
+    def get_java_path(self):
+        if not self.env_manager.java_is_installed():
+            self.add_to_queue("Installing java")
+            if self.env_manager.install_java():
+                self.add_to_queue("Java successfully installed")
+            else:
+                self.add_to_queue("Java failed to install")
+        return self.env_manager.get_java_executor()
 
     @classmethod
     def init_commands(cls):

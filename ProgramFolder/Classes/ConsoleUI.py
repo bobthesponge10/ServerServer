@@ -386,6 +386,8 @@ class ConsoleUI(Thread):
             self.select_pos = self.input_cursor
         self.cursor_left(True)
         self.set_cursor_pos()
+        if len(self.input_text) == 0:
+            return
         if self.select_pos > self.input_cursor:
             self.Input.addstr(self.input_text[self.input_cursor], curses.A_REVERSE)
         else:

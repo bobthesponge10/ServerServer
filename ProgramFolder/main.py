@@ -10,23 +10,23 @@ import os
 import sys
 
 # STUFF TO DO
-# commands/documentation
-# typing
+# help commands
 # user login
 # user chat functionality
 # permissions
 # user filter view
 # user focus on specific server
+
 # something with logging
-# help commands
 # add more servers (factorio)
 # upnp support
 # cloudflare api integration
 # run as admin
-# auto download java env
 # discord bot controller
 # config file, things like autorun commands, file paths, etc
 # hard exit servers in the event they hang/crash
+# commands/documentation
+# typing
 
 # ---minecraft controller stuff
 # edit Settings
@@ -55,7 +55,7 @@ def main():
     Console = ConsoleUI()
     UserInfo = UserData()
     MainServer = Server()
-    Manager = ControllerManager(Console, user_handles, PortHandler)
+    Manager = ControllerManager(Console, user_handles, PortHandler, envDir)
 
     Console.start()
     Console.update_prefix("->")
@@ -122,15 +122,14 @@ def main():
                     if len(parsed) > 0:
                         command = parsed[0]
                         args = parsed[1:]
-
+                        result = False
                         if user.is_server() and command.lower() == "exit":
                             running = False
+                            result = True
                         elif user.is_server() and command.lower() == "clear":
                             Console.clear_console()
-
-                        result = False
-
-                        if command.startswith("/"):
+                            result = True
+                        elif command.startswith("/"):
                             spl1 = command[1:].split(":")
                             path = spl1[0]
                             actual_command = ":".join(spl1[1:])
