@@ -10,12 +10,13 @@ import os
 import sys
 
 # STUFF TO DO
+# create/delete users
+# change users password
 # help commands
-# user login
 # user chat functionality
-# permissions
 # user filter view
 # user focus on specific server
+# config file, things like autorun commands, file paths, etc
 
 # something with logging
 # add more servers (factorio)
@@ -23,7 +24,6 @@ import sys
 # cloudflare api integration
 # run as admin
 # discord bot controller
-# config file, things like autorun commands, file paths, etc
 # hard exit servers in the event they hang/crash
 # commands/documentation
 # typing
@@ -63,6 +63,8 @@ def main():
     UserInfo.set_file_path(userInfoFile)
     UserInfo.load()
 
+    #UserInfo.create_user("Admin", password="12345")
+
     Manager.set_server_types_dir(serverInfoDir)
     Manager.set_instance_data_file(instanceDataFile)
     Manager.set_server_dir(serverDir)
@@ -79,7 +81,7 @@ def main():
     MainServer.start()
     Console.print(f"Hosted socket server at {MainServer.get_ip()}:{MainServer.get_port()}")
 
-    ServerHandle = UserHandle(Console, server=True)
+    ServerHandle = UserHandle(Console, UserInfo, server=True)
     user_handles.append(ServerHandle)
 
     running = True
@@ -88,18 +90,18 @@ def main():
 
         for i in MainServer.get_new_connections():
             connection = MainServer.get_client_from_id(i)
-            user_handle = UserHandle(connection, id_=i)
+            user_handle = UserHandle(connection, UserInfo, id_=i, manager=Manager)
             user_handles.append(user_handle)
-            Manager.print_all(f"Got connection from {connection.get_addr()}")
 
         for i in MainServer.get_old_connections():
             for h in user_handles:
                 if h.get_id() == i:
+                    h.exit()
                     user_handles.remove(h)
-                    Manager.print_all(f"Lost connection from {h.get_obj().get_addr()}")
+                    name = h.get_username()
+                    if name:
+                        Manager.print_all(f"Lost connection from {name}")
                     break
-
-        Manager.flush_servers()
 
         if Manager.get_reload_needed():
             file = ControllerManager.get_file()
@@ -110,6 +112,8 @@ def main():
             ControllerManager_.init_commands()
             ControllerManager_.set_file(file)
             Manager.print_all("Reloaded controller manager")
+
+        Manager.flush_servers()
 
         for user in user_handles:
             items = user.get_input()

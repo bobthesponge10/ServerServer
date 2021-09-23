@@ -13,9 +13,9 @@ import io
 
 
 class ClientHandler:
-    def __init__(self, id_, socket, address, version, server):
+    def __init__(self, id_, socket_, address, version, server):
         self.id = id_
-        self.socket = socket
+        self.socket = socket_
         self.address = address
         self.version = version
         self.server = server
@@ -47,8 +47,8 @@ class ClientHandler:
     def close(self):
         self.server.close_connection(self.id)
 
-    def add_bytes(self, bytes):
-        self.bytes_queue.put(bytes)
+    def add_bytes(self, bytes_):
+        self.bytes_queue.put(bytes_)
 
     def gather_bytes(self):
         while self.bytes_queue.qsize() > 0:

@@ -39,10 +39,10 @@ class UserData:
             return False
         return True
 
-    def get_user_data(self, username, key):
+    def get_user_data(self, username, key, default=None):
         if username in self.users:
-            return self.users[username]["data"].get(key)
-        return
+            return self.users[username]["data"].get(key, default)
+        return default
 
     def set_user_data(self, username, key, value):
         if username in self.users:

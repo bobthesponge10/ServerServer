@@ -27,13 +27,13 @@ class ControllerManager:
         cls.objects.remove(obj)
 
     @classmethod
-    def add_command(cls, keywords, ignore_chars=None, global_function=False):
+    def add_command(cls, keywords, ignore_chars=None, global_function=False, permission=0):
         if not ignore_chars:
             ignore_chars = []
 
         def f(func):
             cls.commands.append({"keywords": keywords, "function": func, "ignore": ignore_chars,
-                                 "global": global_function})
+                                 "global": global_function, "permission": permission})
             return func
 
         return f
@@ -67,13 +67,47 @@ class ControllerManager:
 
         ignore = ["-", "_"]
 
-        @cls.add_command(["bogos?", "bogos"], ignore_chars=ignore)
+        @cls.add_command(["bogos?", "bogos"], ignore_chars=ignore, permission=5)
         def binted(self, handle, *args):
             handle.print("binted")
 
         @cls.add_command(["shutdown"], ignore_chars=ignore)
         def shutdown(self, handle, *args):
             handle.print("Not implemented yet")
+
+        @cls.add_command(["setpermission"], ignore_chars=ignore, global_function=True)
+        def set_user_permission(self, handle, *args, **kwargs):
+            if len(args) < 2:
+                handle.print("Error: command requires 2 arguments")
+                return False
+            user = args[0]
+            permission = args[1]
+            if user not in handle.get_user_data_obj().get_users():
+                handle.print("Error: user not found")
+                return False
+            if not permission.isnumeric() and 0 <= int(permission) <= handle.get_max_permission():
+                handle.print(f"Error: permission must be an integer in the range from 0 to "
+                             f"{handle.get_max_permission()}")
+                return False
+            permission = int(permission)
+
+            if not handle.is_server() and permission >= handle.get_permissions():
+                handle.print("Error: can only change permissions to a value lower that yours")
+                return False
+
+            if not handle.is_server() and \
+                    handle.get_user_data_obj().get_user_data(user, "permission", default=0) >= handle.get_permissions():
+                handle.print("Error: can only change permission of user with lower permission that yours")
+                return False
+
+            handle.get_user_data_obj().set_user_data(user, "permission", permission)
+            handle.print(f"Successfully changed {user}'s permission to {permission}")
+            return True
+
+        @cls.add_command(["getpermissions", "checkpermissions", "checkperms", "perms"],
+                         ignore_chars=ignore, global_function=True)
+        def get_permissions(self, handle, *args, **kwargs):
+            handle.print(f"Your permission level is {handle.get_permissions()}")
 
         @cls.add_command(["loadcontrollers", "loadnewcontrollers", "newcontrollers"],
                          ignore_chars=ignore, global_function=True)
@@ -276,6 +310,9 @@ class ControllerManager:
         for i in self.parent_object.commands:
             temp_name = remove_chars(name, i["ignore"])
             if temp_name.lower() in i["keywords"]:
+                if handle.get_permissions() < i["permission"]:
+                    handle.print("You don't have permission to run that command")
+                    return True
                 if path_given:
                     if not i["global"]:
                         continue
@@ -284,7 +321,7 @@ class ControllerManager:
                     return True
                 except Exception as e:
                     handle.print(f"Error running {name}, Error: {e.__repr__()}")
-                    return False
+                    return True
         return False
 
     def run_command_on_server_type(self, server_type, name, user, *args, **kwargs):
@@ -443,7 +480,8 @@ class ControllerManager:
 
     def print_all(self, value):
         for user in self.handle_list:
-            user.print(value)
+            if user.get_logged_in():
+                user.print(value)
 
     def flush_servers(self):
         for types in self.instances:

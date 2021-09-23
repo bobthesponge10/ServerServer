@@ -27,23 +27,25 @@ class BaseController:
         cls.objects.remove(obj)
 
     @classmethod
-    def add_command(cls, keywords, ignore_chars=None):
+    def add_command(cls, keywords, ignore_chars=None, permission=0):
         if not ignore_chars:
             ignore_chars = []
 
         def f(func):
-            cls.commands.append({"keywords": keywords, "function": func, "ignore": ignore_chars})
+            cls.commands.append({"keywords": keywords, "function": func, "ignore": ignore_chars,
+                                 "permission": permission})
             return func
 
         return f
 
     @classmethod
-    def add_class_command(cls, keywords, ignore_chars=None):
+    def add_class_command(cls, keywords, ignore_chars=None, permission=0):
         if not ignore_chars:
             ignore_chars = []
 
         def f(func):
-            cls.class_commands.append({"keywords": keywords, "function": func, "ignore": ignore_chars})
+            cls.class_commands.append({"keywords": keywords, "function": func, "ignore": ignore_chars,
+                                       "permission": permission})
             return func
 
         return f
@@ -53,12 +55,15 @@ class BaseController:
         for i in cls.class_commands:
             temp_name = remove_chars(name, i["ignore"])
             if temp_name.lower() in i["keywords"]:
+                if handle.get_permissions() < i["permission"]:
+                    handle.print("You don't have permission to run that command")
+                    return True
                 try:
                     i["function"](cls, handle, *args, **kwargs)
                     return True
                 except Exception as e:
                     handle.print(f"Error running {name}, Error: {e.__repr__()}")
-                    return False
+                    return True
         return False
 
     @classmethod
@@ -125,12 +130,15 @@ class BaseController:
         for i in self.parent_object.commands:
             temp_name = remove_chars(name, i["ignore"])
             if temp_name.lower() in i["keywords"]:
+                if handle.get_permissions() < i["permission"]:
+                    handle.print("You don't have permission to run that command")
+                    return True
                 try:
                     i["function"](self, handle, *args, **kwargs)
                     return True
                 except Exception as e:
                     handle.print(f"Error running {name}, Error: {e.__repr__()}")
-                    return False
+                    return True
         return False
 
     def add_to_queue(self, item):
