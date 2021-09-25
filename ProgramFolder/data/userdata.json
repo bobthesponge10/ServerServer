@@ -1,1 +1,1 @@
-{"Admin": {"data": {"permission": 5}, "hash": "d9851c8f8b9e239735ea10623b4c9367a47e4033bb226d5a9417fe6d59317454", "salt": "wAOtZ", "hash_type": "sha256", "time": "1632350582.7928572"}}
+{"Admin": {"data": {"permission": 0, "reset_password": true}, "hash": "f1a77610681ac6c8acb827faa7437c98625d11cd1f215d247a6851f37cd1b856", "salt": "XNhYD", "hash_type": "sha256", "time": "1632486697.1462824"}}

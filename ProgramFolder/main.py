@@ -10,7 +10,6 @@ import os
 import sys
 
 # STUFF TO DO
-# create/delete users
 # change users password
 # help commands
 # user chat functionality
@@ -55,15 +54,13 @@ def main():
     Console = ConsoleUI()
     UserInfo = UserData()
     MainServer = Server()
-    Manager = ControllerManager(Console, user_handles, PortHandler, envDir)
+    Manager = ControllerManager.ControllerManager(Console, user_handles, PortHandler, envDir)
 
     Console.start()
     Console.update_prefix("->")
 
     UserInfo.set_file_path(userInfoFile)
     UserInfo.load()
-
-    #UserInfo.create_user("Admin", password="12345")
 
     Manager.set_server_types_dir(serverInfoDir)
     Manager.set_instance_data_file(instanceDataFile)
@@ -104,10 +101,10 @@ def main():
                     break
 
         if Manager.get_reload_needed():
-            file = ControllerManager.get_file()
-            o = ControllerManager.get_objects()
+            file = ControllerManager.ControllerManager.get_file()
+            o = ControllerManager.ControllerManager.get_objects()
 
-            ControllerManager_ = functions.module_from_file(file, "ControllerManager")
+            ControllerManager_ = functions.reload_module(ControllerManager).ControllerManager
             ControllerManager_.set_objects(o)
             ControllerManager_.init_commands()
             ControllerManager_.set_file(file)

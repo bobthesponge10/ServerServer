@@ -1,5 +1,5 @@
 from threading import Thread
-import time
+from time import time, sleep
 
 
 class UserHandle:
@@ -15,6 +15,9 @@ class UserHandle:
         self.login_thread = None
         self.username = ""
 
+        self.focus = ("", "")
+        self.default_prefix = "->"
+
         self.max_permission = 5
 
         self.running = True
@@ -29,12 +32,12 @@ class UserHandle:
     def login_process(self):
         while self.running:
             try:
-                time.sleep(0.1)
+                sleep(0.1)
                 p = self.get_packets(["login_username", "final_login"])
                 for packet in p:
                     if packet["type"] == "login_username":
                         username = packet.get("username")
-                        if username in self.user_data.get_users():
+                        if self.user_data.is_user(username):
                             alg, salt = self.user_data.get_hash_and_salt(username)
                             self.obj.send_packet({"type": "login_alg_and_salt", "alg": alg, "salt": salt})
                         else:
@@ -62,9 +65,16 @@ class UserHandle:
             self.obj.send_packet({"type": "text", "newline": newline, "loop": loop, "text": f"{data}"})
 
     def get_input(self):
+        focus_prefix = ""
+        if self.focus[0]:
+            focus_prefix += "/" + self.focus[0]
+        if self.focus[1]:
+            focus_prefix += "/" + self.focus[1]
+        if focus_prefix:
+            focus_prefix += ":"
         if self.server:
-            return self.obj.get_input()
-        return [i.get("text") for i in self.get_packets("text")]
+            return [focus_prefix + i for i in self.obj.get_input()]
+        return [(focus_prefix + i.get("text")) for i in self.get_packets("text")]
 
     def get_username(self):
         return self.username
@@ -84,12 +94,12 @@ class UserHandle:
         return out
 
     def wait_for_packets(self, type_, timeout=-1):
-        start_time = time.time()
+        start_time = time()
         while True:
             packets = self.get_packets(type_)
             if len(packets) > 0:
                 return packets
-            if timeout != -1 and start_time + timeout < time.time():
+            if timeout != -1 and start_time + timeout < time():
                 return []
 
     def is_server(self):
@@ -112,11 +122,31 @@ class UserHandle:
     def get_logged_in(self):
         return self.logged_in or self.server
 
+    def set_focus(self, module_name="", controller=""):
+        self.focus = (module_name, controller)
+        if not self.focus[0]:
+            self.set_prefix(self.default_prefix)
+        else:
+            if self.focus[1]:
+                self.set_prefix(f"/{self.focus[0]}/{self.focus[1]}:")
+            else:
+                self.set_prefix(f"/{self.focus[0]}:")
+
+    def set_prefix(self, prefix):
+        if self.server:
+            self.obj.update_prefix(prefix)
+        else:
+            self.obj.send_packet({"type": "update_prefix", "text": prefix})
+
     def get_obj(self):
         return self.obj
 
     def get_id(self):
         return self.id
+
+    def kick(self):
+        if not self.server:
+            self.obj.close()
 
     def exit(self):
         self.running = False
