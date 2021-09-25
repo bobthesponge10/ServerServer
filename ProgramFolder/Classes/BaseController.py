@@ -12,6 +12,7 @@ class BaseController:
     type = "Default"
 
     # <editor-fold desc="Class Methods">
+
     @classmethod
     def get_objects(cls):
         return cls.objects
@@ -37,6 +38,11 @@ class BaseController:
             return func
 
         return f
+
+    @classmethod
+    def reset_commands(cls):
+        cls.commands = []
+        cls.class_commands = []
 
     @classmethod
     def add_class_command(cls, keywords, ignore_chars=None, permission=0):

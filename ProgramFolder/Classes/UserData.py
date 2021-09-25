@@ -8,6 +8,9 @@ from typing import List, Tuple, Any
 
 
 class UserData:
+    """
+    Class to handle all users data and login information securly.
+    """
     def __init__(self):
         self.file_path = None
         self.users = {}
@@ -210,7 +213,7 @@ class UserData:
         return self.latest_hash
 
     @staticmethod
-    def secure_compare(a: str, b: str) -> bool:
+    def secure_compare(a: Any, b: Any) -> bool:
         """
         A more secure compare that cannon be used for timing attacks.
         :param a: iterable object to compare.

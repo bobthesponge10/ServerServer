@@ -71,6 +71,7 @@ class Controller(BaseController):
         self.process = subprocess.Popen(
             f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        os.chdir(old_dir)
         poll = self.process.poll()
 
         while poll is None:
@@ -84,7 +85,6 @@ class Controller(BaseController):
         self.process.stdin.close()
         self.process.stdout.close()
         self.process.stderr.close()
-        os.chdir(old_dir)
 
     def start(self):
         if not self.running:
@@ -104,20 +104,20 @@ class Controller(BaseController):
     def initial_setup(self):
         java_path = self.get_java_path()
         old_dir = os.path.abspath(os.getcwd())
-        os.chdir(self.path)
-
-        if not os.path.isfile(self.jar_name):
+        if not os.path.isfile(os.path.join(self.path, self.jar_name)):
             self.add_to_queue("Jar file missing")
             if not self.download_jar():
                 return False
 
         self.write_properties()
 
-        if not os.path.isfile("eula.txt"):
+        if not os.path.isfile(os.path.join(self.path, "eula.txt")):
             self.add_to_queue("Running setup for eula")
+            os.chdir(self.path)
             self.process = subprocess.Popen(
                 f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            os.chdir(old_dir)
             self.process.stdin.write(b"stop\n")
             self.process.stdin.flush()
             self.process.communicate()
@@ -125,22 +125,24 @@ class Controller(BaseController):
                 self.add_to_queue("Error running jar file, is the correct version of java installed?")
                 return False
 
-        if os.path.isfile("eula.txt"):
-            eula = open("eula.txt", "r")
+        if os.path.isfile(os.path.join(self.path, "eula.txt")):
+            eula = open(os.path.join(self.path, "eula.txt"), "r")
             data = eula.read()
             eula.close()
             if "eula=true" in data and os.path.isdir(self.world_file):
                 os.chdir(old_dir)
                 return
             self.add_to_queue("Editing eula")
-            eula = open("eula.txt", "w")
+            eula = open(os.path.join(self.path, "eula.txt"), "w")
             data = data.replace("eula=false", "eula=true")
             eula.write(data)
             eula.close()
 
         self.add_to_queue("Running initial setup")
+        os.chdir(self.path)
         p = subprocess.Popen(f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        os.chdir(old_dir)
         p.stdin.write(b"stop\n")
         p.stdin.flush()
         p.communicate()
@@ -174,7 +176,7 @@ class Controller(BaseController):
 
         data = "\n".join(out)
 
-        file = open(self.property_file_name, "w")
+        file = open(os.path.join(self.path, self.property_file_name), "w")
         file.write(data)
         file.close()
 
@@ -215,7 +217,7 @@ class Controller(BaseController):
                 self.add_to_queue("Failed to download server")
                 return False
             try:
-                file = open(self.jar_name, "wb")
+                file = open(os.path.join(self.path, self.jar_name), "wb")
                 file.write(data)
                 file.close()
             except IOError:
@@ -248,6 +250,10 @@ class Controller(BaseController):
     def init_commands(cls):
         super().init_commands()
 
+        @cls.add_command(["mnc"])
+        def t(self, user, *args):
+            user.print("OOGA BOOGA")
+
         @cls.add_command(["_"])
         def start(self, user, *args):
             if not len(args) > 0:
@@ -255,8 +261,12 @@ class Controller(BaseController):
                 return False
             if self.running and self.process:
                 inp = " ".join(args)
-                self.process.stdin.write((inp + "\n").encode())
-                self.process.stdin.flush()
+                try:
+                    self.process.stdin.write((inp + "\n").encode())
+                    self.process.stdin.flush()
+                except ValueError:
+                    user.print("Error: server not running")
+                    return False
                 return True
             user.print("Error: server not running")
             return False

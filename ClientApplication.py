@@ -73,6 +73,8 @@ while running:
     for p in C.get_all_packets():
         if p["type"] == "text":
             console.print(p["text"], p["newline"], p["loop"])
+        elif p["type"] == "set_prefix":
+            console.update_prefix(p.get("text"))
 C.stop()
 console.stop()
 
