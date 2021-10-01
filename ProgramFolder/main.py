@@ -11,12 +11,12 @@ import sys
 
 # STUFF TO DO
 # change users password
-# help commands
 # user chat functionality
 # user filter view
-# user focus on specific server
 # config file, things like autorun commands, file paths, etc
+# console clear history after password attempt for security
 
+# LIKE TO DO
 # something with logging
 # add more servers (factorio)
 # upnp support
@@ -26,6 +26,7 @@ import sys
 # hard exit servers in the event they hang/crash
 # commands/documentation
 # typing
+# execute commands from in game
 
 # ---minecraft controller stuff
 # edit Settings
@@ -156,7 +157,7 @@ def main():
                             result = Manager.run_command(command, user, *args)
 
                         if not result:
-                            user.print("Error: unknown command")
+                            user.print("Error: unknown command. Try the \"help\" command")
 
     Console.print("Closing Server Instances")
     Manager.close_instances()

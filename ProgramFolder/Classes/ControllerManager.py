@@ -27,16 +27,33 @@ class ControllerManager:
         cls.objects.remove(obj)
 
     @classmethod
-    def add_command(cls, keywords, ignore_chars=None, global_function=False, permission=0):
+    def add_command(cls, keywords, ignore_chars=None, global_function=False, permission=0, default="", help_info=""):
         if not ignore_chars:
             ignore_chars = []
 
+        if not default:
+            default = keywords[0]
+
         def f(func):
             cls.commands.append({"keywords": keywords, "function": func, "ignore": ignore_chars,
-                                 "global": global_function, "permission": permission})
+                                 "global": global_function, "permission": permission, "default": default,
+                                 "help_info": help_info})
             return func
 
         return f
+
+    @classmethod
+    def find_command(cls, command, global_func=False):
+        for i in cls.commands:
+            temp_name = remove_chars(command, i["ignore"])
+            if temp_name.lower() in i["keywords"]:
+                if not (global_func and not i["global"]):
+                    return i
+        return None
+
+    @classmethod
+    def get_commands(cls, global_func=True):
+        return [i for i in cls.commands if not global_func or i["global"]]
 
     @classmethod
     def get_file(cls):
@@ -51,13 +68,13 @@ class ControllerManager:
     @staticmethod
     def join_args(args_a, args_b):
         out = []
-        for i in range(max(len(args_a), len(args_b))):
-            if len(args_b) > i and args_b[i]:
-                out.append(args_b[i])
-            elif len(args_a) > i and args_a[i]:
-                out.append(args_a[i])
+        for i in args_b:
+            if i:
+                out.append(i)
+        for i in args_a:
+            if i:
+                out.append(i)
         return out
-
     # </editor-fold>
 
     # <editor-fold desc="Commands">
@@ -67,17 +84,101 @@ class ControllerManager:
 
         ignore = ["-", "_", " "]
 
-        @cls.add_command(["bogos?", "bogos"], ignore_chars=ignore, permission=3)
+        @cls.add_command(["help", "h"], ignore_chars=ignore, global_function=True, default="help",
+                         help_info="Use this command to find out how to use a command. Ex: help <command>")
+        def help(self, handle, *args, module_name="", instance="", **kwargs):
+            if len(args) < 1:
+                handle.print("Use this command to find out how to use a command. Ex: help <command>\n"
+                             "Use the \"commands\" command to list all avaiable commands.")
+                return True
+            if self.is_controller(module_name):
+                c = self.parent_object.find_command_from_controller(module_name, args[0])
+                if c:
+                    handle.print(f"{c['default']}:\n{c['help_info']}")
+                    return True
+            c = self.find_command(args[0])
+            if c:
+                handle.print(f"{c['default']}:\n{c['help_info']}")
+                return True
+            else:
+                handle.print(f"Cannot find command {args[0]}")
+                return False
+
+        @cls.add_command(["commands"], ignore_chars=ignore, global_function=True,
+                         help_info="List all available commands in current scope")
+        def commands(self, handle, *args, module_name="", instance="", **kwargs):
+            result = []
+            if self.is_controller(module_name):
+                c = []
+                for command in self.get_commands_from_controller(module_name, instance_commands=False):
+                    c.append("-"+command["default"])
+                if len(c) > 0:
+                    result.append(f"----{module_name} Controller Commands:----")
+                    c.sort()
+                    result += c
+
+                c = []
+                for command in self.get_commands_from_controller(module_name, class_commands=False):
+                    c.append("-" + command["default"])
+                if len(c) > 0:
+                    result.append(f"----{module_name} Instance Commands:----")
+                    c.sort()
+                    result += c
+
+                result.append("----Global Commands:----")
+            else:
+                result.append("----Main Commands----")
+            c = []
+            for command in self.parent_object.get_commands():
+                c.append("-"+command["default"])
+            c.sort()
+            result += c
+            handle.print("\n".join(result))
+
+        @cls.add_command(["message"], ignore_chars=ignore, global_function=True,
+                         help_info="Send a specified user a message\nEx: message <username> <message>")
+        def message(self, handle, *args, controller="", instance="", **kwargs):
+            if len(args) < 1:
+                handle.print("Error: No username given.")
+                return False
+            if len(args) < 2:
+                handle.print("Error: No message given.")
+                return False
+            text = f"[{handle.get_username()}->{args[0]}]:" + " ".join(args[1:])
+            res = self.print(args[0], text)
+            if res:
+                handle.print(text)
+                return True
+            handle.print(f"Error: Could not find user with name: {args[0]}")
+            return False
+
+        @cls.add_command(["shout"], ignore_chars=ignore, global_function=True,
+                         help_info="Messages all users with a message")
+        def shout(self, handle, *args, controller="", instance="", **kwargs):
+            if len(args) < 1:
+                handle.print("Error: No message given.")
+                return False
+            self.print_all(f"[{handle.get_username()}]:" + " ".join(args))
+            return True
+
+        @cls.add_command(["bogos?", "bogos"], ignore_chars=ignore, permission=3, default="bogos",
+                         help_info="Bints the bogos")
         def binted(self, handle, *args):
             handle.print("binted")
             return True
 
-        @cls.add_command(["shutdown"], ignore_chars=ignore, permission=5)
+        @cls.add_command(["shutdown"], ignore_chars=ignore, permission=5,
+                         help_info="Shuts down the Server Server stopping all servers")
         def shutdown(self, handle, *args):
             handle.print("Not implemented yet")
             return True
 
-        @cls.add_command(["focus"], ignore_chars=ignore, global_function=True)
+        @cls.add_command(["focus"], ignore_chars=ignore, global_function=True,
+                         help_info="Focuses console onto a specific controller or controller instance. \n"
+                                   "Puts all commands into the scope of specified location and limits view"
+                                   " of servers to specified location. \n"
+                                   "Use unfocus to return. \n"
+                                   "Ex: focus <controller> <instance> or /<controller>/<instance>:focus")
         def focus(self, handle, *args, module_name="", controller="", **kwargs):
             args = self.join_args(args, [module_name, controller])
             if len(args) == 0:
@@ -92,10 +193,12 @@ class ControllerManager:
                 instance = args[1]
                 if not self.is_server(controller, instance):
                     handle.print(f"Error: cannot find instance of {controller} with name: {instance}")
+                    return False
 
             handle.set_focus(controller, instance)
 
-        @cls.add_command(["unfocus"], ignore_chars=ignore, global_function=True)
+        @cls.add_command(["unfocus"], ignore_chars=ignore, global_function=True,
+                         help_info="Returns focus to global focus")
         def un_focus(self, handle, *args, **kwargs):
             handle.set_focus("", "")
 
@@ -182,9 +285,11 @@ class ControllerManager:
 
         @cls.add_command(["users", "listusers"], ignore_chars=ignore, global_function=True)
         def list_users(self, handle, *args, **kwargs):
-            users = [i.get_username() for i in self.handle_list if i.get_username()]
+            users_dup = [i.get_username() for i in self.handle_list if not i.is_server()]
+            users = []
+            users = [i for i in users_dup if i not in users]
             if len(users) > 0:
-                handle.print("\n".join(users))
+                handle.print(f"{len(users)} total user(s) over {len(users_dup)} connection(s)\n"+"\n".join(users))
             else:
                 handle.print("No users")
             return True
@@ -416,6 +521,18 @@ class ControllerManager:
             return instance.run_command(name, user, *args, **kwargs)
         return False
 
+    def find_command_from_controller(self, controller, command, class_commands=True, instance_commands=True):
+        if controller not in self.server_types:
+            return False
+        return self.server_types[controller]["module"].find_command(command, class_commands=class_commands,
+                                                                    instance_commands=instance_commands)
+
+    def get_commands_from_controller(self, controller, class_commands=True, instance_commands=True):
+        if controller not in self.server_types:
+            return False
+        return self.server_types[controller]["module"].get_commands(class_commands=class_commands,
+                                                                    instance_commands=instance_commands)
+
     def set_server_types_dir(self, dir_):
         self.server_types_dir = dir_
         return True
@@ -568,17 +685,37 @@ class ControllerManager:
         file.close()
         return True
 
-    def print_all(self, value):
+    def print_all(self, value, focus=None):
         for user in self.handle_list:
             if user.get_logged_in():
-                user.print(value)
+                if user.get_focus() != ("", "") and focus:
+                    if user.get_focus() == focus:
+                        user.print(value)
+                    elif not user.get_focus()[1] and user.get_focus()[0] == focus[0]:
+                        user.print(value)
+                else:
+                    user.print(value)
+
+    def print(self, username, value,focus=None):
+        found = False
+        for user in self.handle_list:
+            if user.get_logged_in() and user.get_username() == username:
+                if user.get_focus() != ("", "") and focus:
+                    if user.get_focus() == focus:
+                        user.print(value)
+                    elif not user.get_focus()[1] and user.get_focus()[0] == focus[0]:
+                        user.print(value)
+                else:
+                    user.print(value)
+                found = True
+        return found
 
     def flush_servers(self):
         for types in self.instances:
             for instances in self.instances[types]:
                 items = instances.get_queue()
                 for item in items:
-                    self.print_all(item)
+                    self.print_all(item, focus=(types, instances.get_name()))
 
     def close_instances(self):
         for cont in self.instances:

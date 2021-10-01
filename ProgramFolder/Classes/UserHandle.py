@@ -17,7 +17,7 @@ class UserHandle:
 
         self.focus = ("", "")
         self.default_prefix = "->"
-
+        self.serverName = "SERVER"
         self.max_permission = 5
 
         self.running = True
@@ -37,7 +37,7 @@ class UserHandle:
                 for packet in p:
                     if packet["type"] == "login_username":
                         username = packet.get("username")
-                        if self.user_data.is_user(username):
+                        if self.user_data.is_user(username) and username != self.serverName:
                             alg, salt = self.user_data.get_hash_and_salt(username)
                             self.obj.send_packet({"type": "login_alg_and_salt", "alg": alg, "salt": salt})
                         else:
@@ -77,6 +77,8 @@ class UserHandle:
         return [(focus_prefix + i.get("text")) for i in self.get_packets("text")]
 
     def get_username(self):
+        if self.server:
+            return self.serverName
         return self.username
 
     def get_packets(self, type_):
@@ -131,6 +133,9 @@ class UserHandle:
                 self.set_prefix(f"/{self.focus[0]}/{self.focus[1]}:")
             else:
                 self.set_prefix(f"/{self.focus[0]}:")
+
+    def get_focus(self):
+        return self.focus
 
     def set_prefix(self, prefix):
         if self.server:

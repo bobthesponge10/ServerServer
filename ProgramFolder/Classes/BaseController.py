@@ -28,13 +28,15 @@ class BaseController:
         cls.objects.remove(obj)
 
     @classmethod
-    def add_command(cls, keywords, ignore_chars=None, permission=0):
+    def add_command(cls, keywords, ignore_chars=None, permission=0, default="", help_info=""):
         if not ignore_chars:
             ignore_chars = []
+        if not default:
+            default = keywords[0]
 
         def f(func):
             cls.commands.append({"keywords": keywords, "function": func, "ignore": ignore_chars,
-                                 "permission": permission})
+                                 "permission": permission, "default": default, "help_info": help_info})
             return func
 
         return f
@@ -45,16 +47,41 @@ class BaseController:
         cls.class_commands = []
 
     @classmethod
-    def add_class_command(cls, keywords, ignore_chars=None, permission=0):
+    def add_class_command(cls, keywords, ignore_chars=None, permission=0, default="", help_info=""):
         if not ignore_chars:
             ignore_chars = []
+        if not default:
+            default = keywords[0]
 
         def f(func):
             cls.class_commands.append({"keywords": keywords, "function": func, "ignore": ignore_chars,
-                                       "permission": permission})
+                                       "permission": permission, "default": default, "help_info": help_info})
             return func
 
         return f
+
+    @classmethod
+    def find_command(cls, command, class_commands=True, instance_commands=True):
+        if class_commands:
+            for i in cls.class_commands:
+                temp_name = remove_chars(command, i["ignore"])
+                if temp_name.lower() in i["keywords"]:
+                    return i
+        if instance_commands:
+            for i in cls.commands:
+                temp_name = remove_chars(command, i["ignore"])
+                if temp_name.lower() in i["keywords"]:
+                    return i
+        return None
+
+    @classmethod
+    def get_commands(cls, class_commands=True, instance_commands=True):
+        out = []
+        if class_commands:
+            out += cls.class_commands
+        if instance_commands:
+            out += cls.commands
+        return out
 
     @classmethod
     def run_class_command(cls, name, handle, *args, **kwargs):
