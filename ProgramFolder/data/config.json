@@ -1,0 +1,8 @@
+{
+  "userInfoFile":"ProgramFolder/data/userdata.json",
+  "serverInfoDir":"ProgramFolder/serverTypes/",
+  "instanceDataFile":"ProgramFolder/data/controllerInstances.json",
+  "serverDir":"ServerFolder",
+  "envDir":"ProgramFolder/Env",
+  "socketPort": 10000
+}

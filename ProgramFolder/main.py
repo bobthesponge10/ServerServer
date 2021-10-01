@@ -5,16 +5,14 @@ from Classes import ControllerManager
 from Classes import UserHandle
 from Classes import functions
 from Classes import PortHandler
+import json
 import time
 import os
 import sys
 
 # STUFF TO DO
 # change users password
-# user chat functionality
 # user filter view
-# config file, things like autorun commands, file paths, etc
-# console clear history after password attempt for security
 
 # LIKE TO DO
 # something with logging
@@ -40,12 +38,46 @@ import sys
 
 def main():
 
-    # <editor-fold desc="File Paths">
+    # <editor-fold desc="Base Config Values">
+    configFilePath = "ProgramFolder/data/config.json"
+
     userInfoFile = "ProgramFolder/data/userdata.json"
     serverInfoDir = "ProgramFolder/serverTypes/"
     instanceDataFile = "ProgramFolder/data/controllerInstances.json"
     serverDir = "ServerFolder"
     envDir = "ProgramFolder/Env"
+
+    socketPort = 10000
+
+    # </editor-fold>
+
+    # <editor-fold desc="Config File Loading">
+    try:
+        file = open(configFilePath, "r")
+        data = file.read()
+        file.close()
+    except IOError:
+        data = ""
+        write_data = json.dumps({"userInfoFile": userInfoFile, "serverInfoDir": serverInfoDir,
+                                 "instanceDataFile": instanceDataFile, "serverDir": serverDir,
+                                 "envDir": envDir, "socketPort": socketPort})
+        try:
+            file = open(configFilePath, "w")
+            file.write(write_data)
+            file.close()
+        except IOError:
+            pass
+    try:
+        config = json.loads(data)
+    except json.JSONDecodeError:
+        config = {}
+    userInfoFile = config.get("userInfoFile", userInfoFile)
+    serverInfoDir = config.get("serverInfoDir", serverInfoDir)
+    instanceDataFile = config.get("instanceDataFile", instanceDataFile)
+    serverDir = config.get("serverDir", serverDir)
+    envDir = config.get("envDir", envDir)
+    socketPort = config.get("socketPort", socketPort)
+
     # </editor-fold>
 
     os.chdir(os.path.dirname(os.path.dirname(__file__)))
@@ -75,7 +107,7 @@ def main():
     Console.print(f"Loaded {len(Manager.get_server_names())} server type(s) from '{serverInfoDir}'")
 
     server_port_handler = PortHandler()
-    MainServer.set_port(server_port_handler.request_port(10000))
+    MainServer.set_port(server_port_handler.request_port(socketPort))
     MainServer.start()
     Console.print(f"Hosted socket server at {MainServer.get_ip()}:{MainServer.get_port()}")
 
