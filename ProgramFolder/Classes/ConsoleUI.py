@@ -236,6 +236,14 @@ class ConsoleUI(Thread):
                 self._input_cursor = limit
         self.hard_update_input()
 
+    def clear_input_history(self):
+        """
+        Clears the console's input history.
+        """
+        self._input_history = []
+        self._input_index = -1
+        self.hard_update_input()
+
     def clear_console(self):
         """
         Clears the console and buffer for the user.

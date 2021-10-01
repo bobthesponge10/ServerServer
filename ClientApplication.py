@@ -33,11 +33,13 @@ while not logged_in:
         if login_state == 0:
             username = i
             console.update_prefix("Password: ")
+            console.clear_input_history()
             login_state = 1
         elif login_state == 1:
             password = i
             C.send_packet({"type": "login_username", "username": username})
             console.update_prefix("Waiting. . .")
+            console.clear_input_history()
             login_state = 2
     for packet in C.get_all_packets():
         if packet["type"] == "login_alg_and_salt":
@@ -52,6 +54,7 @@ while not logged_in:
                 console.print("Invalid username or password")
                 console.update_prefix("Username: ")
 
+console.clear_input_history()
 console.clear_console()
 password = ""
 console.print(f"Successfully logged in as: {username}")
