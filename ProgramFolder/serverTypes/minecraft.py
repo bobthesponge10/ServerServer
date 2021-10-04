@@ -42,7 +42,7 @@ class Controller(BaseController):
             self.memory_to_use = self.data.get("memory_to_use", self.memory_to_use)
         self.port = self.port_handler.request_port(self.port)
 
-        self.set_address(f"{self.port_handler.get_ip_address()}:{self.port}")
+        self.set_address(f"{self.port_handler.get_ip()}:{self.port}")
 
         self.property_file_name = "server.properties"
 
@@ -87,6 +87,7 @@ class Controller(BaseController):
         self.process.stdin.close()
         self.process.stdout.close()
         self.process.stderr.close()
+        self.process = None
 
     def start(self):
         if not self.running:
@@ -125,7 +126,9 @@ class Controller(BaseController):
             self.process.communicate()
             if self.process.poll() != 0:
                 self.add_to_queue("Error running jar file, is the correct version of java installed?")
+                self.process = None
                 return False
+            self.process = None
 
         if os.path.isfile(os.path.join(self.path, "eula.txt")):
             eula = open(os.path.join(self.path, "eula.txt"), "r")
@@ -142,12 +145,13 @@ class Controller(BaseController):
 
         self.add_to_queue("Running initial setup")
         os.chdir(self.path)
-        p = subprocess.Popen(f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
+        self.process = subprocess.Popen(f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         os.chdir(old_dir)
-        p.stdin.write(b"stop\n")
-        p.stdin.flush()
-        p.communicate()
+        self.process.stdin.write(b"stop\n")
+        self.process.stdin.flush()
+        self.process.communicate()
+        self.process = None
         os.chdir(old_dir)
         self.add_to_queue("Finished initial setup")
         return True
@@ -155,7 +159,7 @@ class Controller(BaseController):
     def write_properties(self):
         data = []
         out = []
-        properties = {"server-port": self.port, "level-name": self.world_file}
+        properties = {"server-port": self.port, "server-ip": self.port_handler.get_ip(), "level-name": self.world_file}
         if os.path.isfile(self.property_file_name):
             file = open(os.path.join(self.path, self.property_file_name), "r")
             data = file.read().split("\n")

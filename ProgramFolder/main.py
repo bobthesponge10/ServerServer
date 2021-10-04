@@ -9,8 +9,10 @@ import json
 import time
 import os
 import sys
+import socket
 
 # STUFF TO DO
+# set run ip
 
 # LIKE TO DO
 # something with logging
@@ -47,7 +49,8 @@ def main():
         "instanceDataFile": "ProgramFolder/data/controllerInstances.json",
         "serverDir": "ServerFolder",
         "envDir": "ProgramFolder/Env",
-        "socketPort": 10000
+        "socketPort": 10000,
+        "ip": "127.0.0.1"
     }
 
     # </editor-fold>
@@ -74,6 +77,10 @@ def main():
     for i in default_config:
         config[i] = config.get(i, default_config[i])
     # </editor-fold>
+
+    if not isinstance(config["ip"], str) or len(config["ip"].split(".")) != 4:
+        config["ip"] = socket.gethostbyname(socket.gethostname())
+    PortHandler.set_ip(config["ip"])
 
     os.chdir(os.path.dirname(os.path.dirname(__file__)))
 
@@ -102,6 +109,7 @@ def main():
     Console.print(f"Loaded {len(Manager.get_server_names())} server type(s) from '{config['serverInfoDir']}'")
 
     server_port_handler = PortHandler()
+    MainServer.set_ip(config["ip"])
     MainServer.set_port(server_port_handler.request_port(config['socketPort']))
     MainServer.start()
     Console.print(f"Hosted socket server at {MainServer.get_ip()}:{MainServer.get_port()}")

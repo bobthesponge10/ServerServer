@@ -3,6 +3,7 @@ import socket
 
 class PortHandler:
     all_ports = []
+    ip = ""
 
     def __init__(self):
         self.taken_ports = []
@@ -33,6 +34,10 @@ class PortHandler:
         for i in self.taken_ports:
             self.all_ports.remove(i)
 
-    @staticmethod
-    def get_ip_address():
-        return socket.gethostbyname(socket.gethostname())
+    @classmethod
+    def set_ip(cls, ip):
+        cls.ip = ip
+
+    @classmethod
+    def get_ip(cls):
+        return cls.ip
