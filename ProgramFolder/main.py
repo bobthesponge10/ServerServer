@@ -167,20 +167,20 @@ def main():
                             path = [i for i in path.split("/") if len(i) > 0]
 
                             if len(path) == 1:
-                                module_name = path[0]
-                                result = Manager.run_command_on_server_type(module_name, actual_command, user, *args)
+                                controller = path[0]
+                                result = Manager.run_command_on_server_type(controller, actual_command, user, *args)
                                 if not result:
                                     result = Manager.run_command(actual_command, user, *args,
-                                                                 module_name=module_name)
+                                                                 controller=controller)
 
                             elif len(path) == 2:
-                                module_name = path[0]
-                                controller = path[1]
+                                controller = path[0]
+                                instance = path[1]
                                 result = Manager.run_command_on_server_instance(
-                                    module_name, controller, actual_command, user, *args)
+                                    controller, instance, actual_command, user, *args)
                                 if not result:
                                     result = Manager.run_command(actual_command, user, *args,
-                                                                 module_name=module_name, controller=controller)
+                                                                 controller=controller, instance=instance)
 
                         else:
                             result = Manager.run_command(command, user, *args)

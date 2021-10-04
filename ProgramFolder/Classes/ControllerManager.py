@@ -86,13 +86,13 @@ class ControllerManager:
 
         @cls.add_command(["help", "h"], ignore_chars=ignore, global_function=True, default="help",
                          help_info="Use this command to find out how to use a command. Ex: help <command>")
-        def help(self, handle, *args, module_name="", instance="", **kwargs):
+        def help(self, handle, *args, controller="", instance="", **kwargs):
             if len(args) < 1:
                 handle.print("Use this command to find out how to use a command. Ex: help <command>\n"
                              "Use the \"commands\" command to list all avaiable commands.")
                 return True
-            if self.is_controller(module_name):
-                c = self.parent_object.find_command_from_controller(module_name, args[0])
+            if self.is_controller(controller):
+                c = self.parent_object.find_command_from_controller(controller, args[0])
                 if c:
                     handle.print(f"{c['default']}:\n{c['help_info']}")
                     return True
@@ -104,8 +104,18 @@ class ControllerManager:
                 handle.print(f"Cannot find command {args[0]}")
                 return False
 
-        @cls.add_command(["filter"], ignore_chars=ignore, global_function=True,
-                        help_info="idk man")
+        @cls.add_command(["filter", "f"], ignore_chars=ignore, global_function=True,
+                         help_info="Modifies filter values.\nThere are multiple modes:"
+                                   "\n--on: Turns the filter on."
+                                   "\n--off: Turns the filter off."
+                                   "\n--reset: Resets the filter entries."
+                                   "\n--default <on or off>: Sets the behavior of items that do not have an entry."
+                                   "\n--view: Lists filter settings and entries."
+                                   "\n--allow <controller> <instance>: Adds an allow entry to the filter."
+                                   "\n--disallow <controllers> <instance>: Adds a disallow entry to the filter."
+                                   "\nBoth 'allow' and 'disallow' add entries to the filter. The instance argument\n"
+                                   "is optional. Without it the entry applies to the entire controller but can be\n"
+                                   "overwritten by a specific instance entry.")
         def filter_(self, handle, *args, controller="", instance="", **kwargs):
             if len(args) > 0 and args[0] == "allow" or args[0] == "disallow":
                 cont = controller
@@ -172,22 +182,22 @@ class ControllerManager:
 
         @cls.add_command(["commands"], ignore_chars=ignore, global_function=True,
                          help_info="List all available commands in current scope")
-        def commands(self, handle, *args, module_name="", instance="", **kwargs):
+        def commands(self, handle, *args, controller="", instance="", **kwargs):
             result = []
-            if self.is_controller(module_name):
+            if self.is_controller(controller):
                 c = []
-                for command in self.get_commands_from_controller(module_name, instance_commands=False):
+                for command in self.get_commands_from_controller(controller, instance_commands=False):
                     c.append("-"+command["default"])
                 if len(c) > 0:
-                    result.append(f"----{module_name} Controller Commands:----")
+                    result.append(f"----{controller} Controller Commands:----")
                     c.sort()
                     result += c
 
                 c = []
-                for command in self.get_commands_from_controller(module_name, class_commands=False):
+                for command in self.get_commands_from_controller(controller, class_commands=False):
                     c.append("-" + command["default"])
                 if len(c) > 0:
-                    result.append(f"----{module_name} Instance Commands:----")
+                    result.append(f"----{controller} Instance Commands:----")
                     c.sort()
                     result += c
 
@@ -201,9 +211,9 @@ class ControllerManager:
             result += c
             handle.print("\n".join(result))
 
-        @cls.add_command(["message"], ignore_chars=ignore, global_function=True,
+        @cls.add_command(["message", "m", "msg"], ignore_chars=ignore, global_function=True,
                          help_info="Send a specified user a message\nEx: message <username> <message>")
-        def message(self, handle, *args, controller="", instance="", **kwargs):
+        def message(self, handle, *args, **kwargs):
             if len(args) < 1:
                 handle.print("Error: No username given.")
                 return False
@@ -218,9 +228,9 @@ class ControllerManager:
             handle.print(f"Error: Could not find user with name: {args[0]}")
             return False
 
-        @cls.add_command(["shout"], ignore_chars=ignore, global_function=True,
+        @cls.add_command(["shout", "s"], ignore_chars=ignore, global_function=True,
                          help_info="Messages all users with a message")
-        def shout(self, handle, *args, controller="", instance="", **kwargs):
+        def shout(self, handle, *args, **kwargs):
             if len(args) < 1:
                 handle.print("Error: No message given.")
                 return False
@@ -245,30 +255,32 @@ class ControllerManager:
                                    " of servers to specified location. \n"
                                    "Use unfocus to return. \n"
                                    "Ex: focus <controller> <instance> or /<controller>/<instance>:focus")
-        def focus(self, handle, *args, module_name="", controller="", **kwargs):
-            args = self.join_args(args, [module_name, controller])
+        def focus(self, handle, *args, controller="", instance="", **kwargs):
+            args = self.join_args(args, [controller, instance])
             if len(args) == 0:
                 handle.print("Error: requires at least one argument.")
                 return False
-            controller = args[0]
-            instance = ""
-            if not self.is_controller(controller):
-                handle.print(f"Error: cannot find controller with name: {controller}")
+            c = args[0]
+            ins = ""
+            if not self.is_controller(c):
+                handle.print(f"Error: cannot find controller with name: {c}")
                 return False
             if len(args) > 1:
-                instance = args[1]
-                if not self.is_server(controller, instance):
-                    handle.print(f"Error: cannot find instance of {controller} with name: {instance}")
+                ins = args[1]
+                if not self.is_server(c, ins):
+                    handle.print(f"Error: cannot find instance of {c} with name: {ins}")
                     return False
 
-            handle.set_focus(controller, instance)
+            handle.set_focus(c, ins)
 
         @cls.add_command(["unfocus"], ignore_chars=ignore, global_function=True,
                          help_info="Returns focus to global focus")
         def un_focus(self, handle, *args, **kwargs):
             handle.set_focus("", "")
 
-        @cls.add_command(["setpermission"], ignore_chars=ignore, global_function=True)
+        @cls.add_command(["setpermission", "setperm"], ignore_chars=ignore, global_function=True,
+                         help_info="Sets a users permission level."
+                                   "\nEx: setpermission <username> <permission>")
         def set_user_permission(self, handle, *args, **kwargs):
             if len(args) < 2:
                 handle.print("Error: command requires 2 arguments.")
@@ -297,7 +309,7 @@ class ControllerManager:
             handle.print(f"Successfully changed {username}'s permission to {permission}.")
             return True
         
-        @cls.add_command(["resetpassword"], ignore_chars=ignore, global_function=True, default="reset_password", 
+        @cls.add_command(["resetpassword", "resetpass"], ignore_chars=ignore, global_function=True, default="reset_password",
                          help_info="Resets a given users password.\nEx: reset_password <username>")
         def reset_password(self, handle, *args, **kwargs):
             if len(args) < 1:
@@ -315,13 +327,15 @@ class ControllerManager:
             handle.print(f"Successfully reset password of {args[0]}")
             return True
         
-        @cls.add_command(["getpermissions", "checkpermissions", "checkperms", "perms"],
-                         ignore_chars=ignore, global_function=True)
+        @cls.add_command(["getpermissions", "checkpermissions", "checkperms", "perms", "permissions"],
+                         ignore_chars=ignore, global_function=True, help_info="Displays the users current permissions")
         def get_permissions(self, handle, *args, **kwargs):
             handle.print(f"Your permission level is {handle.get_permissions()}")
             return True
 
-        @cls.add_command(["createuser", "makeuser"], ignore_chars=ignore, global_function=True)
+        @cls.add_command(["createuser", "makeuser", "mkuser"], ignore_chars=ignore, global_function=True,
+                         help_info="Creates a user with a given username and optional permission level"
+                                   "\nEx: createuser <username> <permission> or createuser <username>")
         def create_user(self, handle, *args, **kwargs):
             if len(args) == 0:
                 handle.print("Error: requires at least 1 argument.")
@@ -346,7 +360,9 @@ class ControllerManager:
             handle.get_user_data_obj().set_user_data(username, "reset_password", True)
             return True
 
-        @cls.add_command(["removeuser", "deleteuser"], ignore_chars=ignore, global_function=True)
+        @cls.add_command(["removeuser", "deleteuser", "rmuser"], ignore_chars=ignore, global_function=True,
+                         help_info="Deletes a given user and kicks them off if they are logged in"
+                                   "\nEx: removeuser <username>")
         def remove_user(self, handle, *args, **kwargs):
             if len(args) == 0:
                 handle.print("Error: requires 1 argument.")
@@ -367,7 +383,8 @@ class ControllerManager:
             handle.print(f"Successfully removed user {username}")
             return True
 
-        @cls.add_command(["users", "listusers"], ignore_chars=ignore, global_function=True)
+        @cls.add_command(["users", "listusers"], ignore_chars=ignore, global_function=True,
+                         help_info="Lists all users currently online.")
         def list_users(self, handle, *args, **kwargs):
             users_dup = [i.get_username() for i in self.handle_list if not i.is_server()]
             users = []
@@ -379,7 +396,8 @@ class ControllerManager:
             return True
 
         @cls.add_command(["loadcontrollers", "loadnewcontrollers", "newcontrollers"],
-                         ignore_chars=ignore, global_function=True, permission=5)
+                         ignore_chars=ignore, global_function=True, permission=5,
+                         help_info="Checks if new controllers exist and loads them.")
         def load_server_types(self, handle, *args, **kwargs):
             length = len(self.get_server_names())
             self.load_server_types()
@@ -387,20 +405,24 @@ class ControllerManager:
             handle.print(f"Loaded {length} additional controller(s) from '{self.get_server_types_dir()}'.")
 
         @cls.add_command(["getcontrollers", "printcontrollers", "listcontrollers", "controllers"],
-                         ignore_chars=ignore, global_function=True, permission=1)
+                         ignore_chars=ignore, global_function=True, permission=1,
+                         help_info="Lists of all controllers.")
         def get_server_names(self, handle, *args, **kwargs):
             handle.print("\n".join([str(i[0] + 1) + ": " + i[1] for i in enumerate(self.get_server_names())]))
 
-        @cls.add_command(["reloadcontrollers"], ignore_chars=ignore, global_function=True, permission=5)
+        @cls.add_command(["reloadcontrollers"], ignore_chars=ignore, global_function=True, permission=5,
+                         help_info="Reloads all controllers to update command code.")
         def reload_all_controllers(self, handle, *args, **kwargs):
             for i in self.get_server_names():
                 self.console.print("Reloading " + i)
                 self.reload_type(i)
             handle.print("Finished Reloading all controllers.")
 
-        @cls.add_command(["reloadcontroller"], ignore_chars=ignore, global_function=True, permission=5)
-        def reload_controller(self, handle, *args, module_name="", **kwargs):
-            args = self.join_args(args, [module_name])
+        @cls.add_command(["reloadcontroller"], ignore_chars=ignore, global_function=True, permission=5,
+                         help_info="Reloads a controller from file to update command code."
+                                   "\nEx: reloadcontroller <controller>")
+        def reload_controller(self, handle, *args, controller="", **kwargs):
+            args = self.join_args(args, [controller])
             if len(args) < 1:
                 handle.print("Error: Please specify a controller.")
                 return False
@@ -411,15 +433,18 @@ class ControllerManager:
             handle.print("Error: Not a valid controller.")
             return False
 
-        @cls.add_command(["reloadmanager", "rmanager"], ignore_chars=ignore, global_function=True, permission=5)
+        @cls.add_command(["reloadmanager", "rmanager"], ignore_chars=ignore, global_function=True, permission=5,
+                         help_info="Reloads the controller manager from file to update command code.")
         def reload_manager(self, handle, *args, **kwargs):
             self.reload()
             return True
 
-        @cls.add_command(["createserver", "makeserver", "createinstance", "makeinstance"],
-                         ignore_chars=ignore, global_function=True, permission=4)
-        def create_instance(self, handle, *args, module_name="", **kwargs):
-            args = self.join_args(args, [module_name])
+        @cls.add_command(["createserver", "makeserver", "createinstance", "makeinstance", "mkserver", "mkinstance"],
+                         ignore_chars=ignore, global_function=True, permission=4,
+                         help_info="Creates an instance with a given name of a given controller type"
+                                   "\n Ex: createinstance <controller> <name> <additional args>")
+        def create_instance(self, handle, *args, controller="", **kwargs):
+            args = self.join_args(args, [controller])
             if len(args) > 1:
                 if self.create_instance(args[0], args[1], *args[2:]):
                     handle.print(f"Created instance of {args[0]} with name {args[1]}.")
@@ -427,10 +452,12 @@ class ControllerManager:
             handle.print("Error: invalid arguments.")
             return False
 
-        @cls.add_command(["removeinstance", "deleteinstance", "removeserver", "deleteserver"],
-                         ignore_chars=ignore, permission=4)
-        def remove_instance(self, handle, *args, module_name="", controller="", **kwargs):
-            args = self.join_args(args, [module_name, controller])
+        @cls.add_command(["removeinstance", "deleteinstance", "removeserver", "deleteserver", "rminstance", "rmserver"],
+                         ignore_chars=ignore, permission=4,
+                         help_info="Deletes an instance if it is not running"
+                                   "\nEx: removeinstance <controller> <instance>")
+        def remove_instance(self, handle, *args, controller="", instance="", **kwargs):
+            args = self.join_args(args, [controller, instance])
             if len(args) < 2:
                 handle.print("Error: Requires 2 arguments.")
                 return False
@@ -449,7 +476,8 @@ class ControllerManager:
                     return True
             handle.print("Error: invalid arguments.")
 
-        @cls.add_command(["saveinstances", 'saveservers'], ignore_chars=ignore, global_function=True, permission=2)
+        @cls.add_command(["saveinstances", 'saveservers'], ignore_chars=ignore, global_function=True, permission=2,
+                         help_info="Saves instance config to file, done automatically on shutdown.")
         def save(self, handle, *args, **kwargs):
             if self.save_instances_to_file():
                 handle.print("Saved instances to file.")
@@ -458,12 +486,12 @@ class ControllerManager:
             return False
 
         @cls.add_command(["listinstances", "printinstances", "instances", "servers"],
-                         ignore_chars=ignore, global_function=True, permission=1)
-        def list_instances(self, handle, *args, module_name="", **kwargs):
+                         ignore_chars=ignore, global_function=True, permission=1, help_info="Lists all instances")
+        def list_instances(self, handle, *args, controller="", **kwargs):
             out = []
 
             for i in self.get_server_names():
-                if module_name and module_name != i:
+                if controller and controller != i:
                     continue
                 instances = self.get_names_of_server_from_type(i)
                 for name in instances:
@@ -474,9 +502,10 @@ class ControllerManager:
             handle.print("\n".join(out))
             return True
 
-        @cls.add_command(["start"], ignore_chars=ignore, global_function=True, permission=3)
-        def start_instance(self, handle, *args, module_name="", controller="", **kwargs):
-            args = self.join_args(args, [module_name, controller])
+        @cls.add_command(["start"], ignore_chars=ignore, global_function=True, permission=3,
+                         help_info="Starts an instance.\nEx: start <controller> <instance>")
+        def start_instance(self, handle, *args, controller="", instance="", **kwargs):
+            args = self.join_args(args, [controller, instance])
             if len(args) < 2:
                 handle.print("Error: Requires 2 arguments.")
                 return False
@@ -494,9 +523,11 @@ class ControllerManager:
                 m.start()
                 handle.print(f"Starting {args[0]}/{args[1]}.")
 
-        @cls.add_command(["setup"], ignore_chars=ignore, global_function=True, permission=3)
-        def setup_instance(self, handle, *args, module_name="", controller="", **kwargs):
-            args = self.join_args(args, [module_name, controller])
+        @cls.add_command(["setup"], ignore_chars=ignore, global_function=True, permission=3,
+                         help_info="Runs the setup of an instance without running it if possible."
+                                   "\nEx: setup <controller> <instance>")
+        def setup_instance(self, handle, *args, controller="", instance="", **kwargs):
+            args = self.join_args(args, [controller, instance])
             if len(args) < 2:
                 handle.print("Error: Requires 2 arguments.")
                 return False
@@ -515,9 +546,10 @@ class ControllerManager:
             handle.print(f"Setting up {args[0]}/{args[1]}.")
             return True
 
-        @cls.add_command(["stop"], ignore_chars=ignore, global_function=True, permission=3)
-        def stop_instance(self, handle, *args, module_name="", controller="", **kwargs):
-            args = self.join_args(args, [module_name, controller])
+        @cls.add_command(["stop"], ignore_chars=ignore, global_function=True, permission=3,
+                         help_info="Stops an instance.\nEx: stop <controller> <instance>")
+        def stop_instance(self, handle, *args, controller="", instance="", **kwargs):
+            args = self.join_args(args, [controller, instance])
             if len(args) < 2:
                 handle.print("Error: Requires 2 arguments.")
                 return False
