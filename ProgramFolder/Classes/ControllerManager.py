@@ -502,6 +502,25 @@ class ControllerManager:
             handle.print("\n".join(out))
             return True
 
+        @cls.add_command(["instanceinfo", "serverinfo"], ignore_chars=ignore, global_function=True, permission=1,
+                         help_info="Lists info of a given server.\nEx: instanceinfo <controller> <instance>")
+        def instance_info(self, handle, *args, controller="", instance="", **kwargs):
+            args = self.join_args(args, [controller, instance])
+            if len(args) < 2:
+                handle.print("Error: Requires 2 arguments.")
+                return False
+            if args[0] not in self.get_server_names():
+                handle.print(f"Error: Cannot find controller with name: {args[0]}.")
+                return False
+            m = self.get_instance_from_type_and_name(args[0], args[1])
+            if not m:
+                handle.print(f"Error: Cannot find instance with name: {args[1]}.")
+                return False
+            handle.print(f"Name: {args[1]}"
+                         f"\nController: {args[0]}"
+                         f"\nRunning: {m.get_running()}"
+                         f"\nAddress: {m.get_address()}")
+
         @cls.add_command(["start"], ignore_chars=ignore, global_function=True, permission=3,
                          help_info="Starts an instance.\nEx: start <controller> <instance>")
         def start_instance(self, handle, *args, controller="", instance="", **kwargs):

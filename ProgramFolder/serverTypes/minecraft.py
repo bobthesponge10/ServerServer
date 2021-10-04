@@ -42,6 +42,8 @@ class Controller(BaseController):
             self.memory_to_use = self.data.get("memory_to_use", self.memory_to_use)
         self.port = self.port_handler.request_port(self.port)
 
+        self.set_address(f"{self.port_handler.get_ip_address()}:{self.port}")
+
         self.property_file_name = "server.properties"
 
     def save_data(self):

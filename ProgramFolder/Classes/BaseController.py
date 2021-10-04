@@ -126,6 +126,8 @@ class BaseController:
         self.port_handler = port_handler
         self.base_dir = self.manager.get_server_dir()
 
+        self.address = ""
+
         self.path = os.path.join(self.base_dir, self.type, self.name)
         if not os.path.isdir(self.path):
             os.makedirs(self.path)
@@ -185,6 +187,12 @@ class BaseController:
             except Empty:
                 break
         return out
+
+    def set_address(self, address):
+        self.address = address
+
+    def get_address(self):
+        return self.address
 
     def start(self):
         raise NotImplemented

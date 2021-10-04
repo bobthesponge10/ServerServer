@@ -1,3 +1,6 @@
+import socket
+
+
 class PortHandler:
     all_ports = []
 
@@ -29,3 +32,7 @@ class PortHandler:
     def remove(self):
         for i in self.taken_ports:
             self.all_ports.remove(i)
+
+    @staticmethod
+    def get_ip_address():
+        return socket.gethostbyname(socket.gethostname())
