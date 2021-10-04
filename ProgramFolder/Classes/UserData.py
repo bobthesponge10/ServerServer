@@ -95,6 +95,18 @@ class UserData:
         """
         return username in self.users
 
+    def change_user_salt(self, username: str) -> bool:
+        """
+        Changes a user's password's salt to a random value.
+        :param username: The username to use.
+        :return: A boolean if the value was able to be changed.
+        """
+        if username in self.users:
+            u = self.users[username]
+            u["salt"] = self.generate_random_string()
+            return True
+        return False
+
     def get_hash_and_salt(self, username: str) -> Tuple[str, str]:
         """
         Gets both the hash type and salt for the given user.

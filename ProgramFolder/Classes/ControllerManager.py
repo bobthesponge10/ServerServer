@@ -104,6 +104,72 @@ class ControllerManager:
                 handle.print(f"Cannot find command {args[0]}")
                 return False
 
+        @cls.add_command(["filter"], ignore_chars=ignore, global_function=True,
+                        help_info="idk man")
+        def filter_(self, handle, *args, controller="", instance="", **kwargs):
+            if len(args) > 0 and args[0] == "allow" or args[0] == "disallow":
+                cont = controller
+                inst = instance
+                if len(args) >= 3:
+                    cont = args[1]
+                    inst = args[2]
+                elif len(args) >= 2:
+                    cont = args[1]
+                handle.modify_filter(args[0] == "allow", controller=cont, instance=inst)
+                handle.print("Filter added.")
+                return True
+
+            elif "view" in args:
+                out = ["----Settings----", f"Enabled: {handle.is_filtered()}"]
+                default = handle.get_filter_default()
+                if default:
+                    out.append("Default: Enabled")
+                else:
+                    out.append("Default: Disabled")
+
+                f = handle.get_filter()
+
+                t = []
+                for i in f["controllers"]:
+                    e = "Enabled" if f["controllers"][i] else "Disabled"
+                    t.append(f"{i}: {e}")
+                if len(t) > 0:
+                    out.append("----Controller Filters----")
+                    out += t
+                t = []
+                for i in f["instances"]:
+                    e = "Enabled" if f["instances"][i] else "Disabled"
+                    t.append(f"{i}: {e}")
+                if len(t) > 0:
+                    out.append("----Instance Filters----")
+                    out += t
+                handle.print("\n".join(out))
+                return True
+
+            elif "reset" in args:
+                handle.reset_filter()
+                handle.print("Filter reset.")
+                return True
+
+            elif "default" in args:
+                if "on" in args:
+                    handle.print("Default behavior is on.")
+                    handle.set_filter_default(True)
+                    return True
+                elif "off" in args:
+                    handle.print("Default behavior is off.")
+                    handle.set_filter_default(False)
+                    return True
+
+            elif "on" in args:
+                handle.print("Filter enabled.")
+                handle.set_filter(True)
+                return True
+            elif "off" in args:
+                handle.print("Filter disabled.")
+                handle.set_filter(False)
+                return True
+
         @cls.add_command(["commands"], ignore_chars=ignore, global_function=True,
                          help_info="List all available commands in current scope")
         def commands(self, handle, *args, module_name="", instance="", **kwargs):
@@ -170,7 +236,7 @@ class ControllerManager:
         @cls.add_command(["shutdown"], ignore_chars=ignore, permission=5,
                          help_info="Shuts down the Server Server stopping all servers")
         def shutdown(self, handle, *args):
-            handle.print("Not implemented yet")
+            self.shutdown()
             return True
 
         @cls.add_command(["focus"], ignore_chars=ignore, global_function=True,
@@ -230,7 +296,25 @@ class ControllerManager:
             handle.get_user_data_obj().set_user_data(username, "permission", permission)
             handle.print(f"Successfully changed {username}'s permission to {permission}.")
             return True
-
+        
+        @cls.add_command(["resetpassword"], ignore_chars=ignore, global_function=True, default="reset_password", 
+                         help_info="Resets a given users password.\nEx: reset_password <username>")
+        def reset_password(self, handle, *args, **kwargs):
+            if len(args) < 1:
+                handle.print("Error: No username specified.")
+                return False
+            if not handle.get_user_data_obj().is_user(args[0]):
+                handle.print(f"Error: Cannot find user with name: {args[0]}")
+                return False
+            if not handle.is_server() and handle.get_user_data_obj().get_user_data(args[0], "permission", default=0) \
+                    >= handle.get_permissions():
+                handle.print("Error: can only change reset password of user with lower permission that yours.")
+                return False
+            handle.get_user_data_obj().set_user_data(args[0], "reset_password", True)
+            handle.get_user_data_obj().update_user_password(args[0], password="temp_password")
+            handle.print(f"Successfully reset password of {args[0]}")
+            return True
+        
         @cls.add_command(["getpermissions", "checkpermissions", "checkperms", "perms"],
                          ignore_chars=ignore, global_function=True)
         def get_permissions(self, handle, *args, **kwargs):
@@ -472,6 +556,7 @@ class ControllerManager:
         self.handle_list = handle_list
 
         self.reload_needed = False
+        self.shutdown_needed = False
 
     def get_env_manager(self):
         return self.env_manager
@@ -479,8 +564,14 @@ class ControllerManager:
     def reload(self):
         self.reload_needed = True
 
+    def shutdown(self):
+        self.shutdown_needed = True
+
     def get_reload_needed(self):
         return self.reload_needed
+
+    def get_shutdown_needed(self):
+        return self.shutdown_needed
 
     def remove(self):
         self.parent_object.remove(self)
@@ -687,23 +778,19 @@ class ControllerManager:
 
     def print_all(self, value, focus=None):
         for user in self.handle_list:
-            if user.get_logged_in():
-                if user.get_focus() != ("", "") and focus:
-                    if user.get_focus() == focus:
-                        user.print(value)
-                    elif not user.get_focus()[1] and user.get_focus()[0] == focus[0]:
-                        user.print(value)
-                else:
-                    user.print(value)
+            self.print(user.get_username(), value, focus=focus)
 
-    def print(self, username, value,focus=None):
+    def print(self, username, value, focus=None):
         found = False
         for user in self.handle_list:
             if user.get_logged_in() and user.get_username() == username:
-                if user.get_focus() != ("", "") and focus:
-                    if user.get_focus() == focus:
+                if not focus:
+                    user.print(value)
+                elif user.is_focused():
+                    if user.check_focus(focus):
                         user.print(value)
-                    elif not user.get_focus()[1] and user.get_focus()[0] == focus[0]:
+                elif user.is_filtered():
+                    if user.check_filter(focus):
                         user.print(value)
                 else:
                     user.print(value)

@@ -11,8 +11,6 @@ import os
 import sys
 
 # STUFF TO DO
-# change users password
-# user filter view
 
 # LIKE TO DO
 # something with logging
@@ -25,6 +23,8 @@ import sys
 # commands/documentation
 # typing
 # execute commands from in game
+# permission tp view server output
+# obscure text when typing password
 
 # ---minecraft controller stuff
 # edit Settings
@@ -41,13 +41,14 @@ def main():
     # <editor-fold desc="Base Config Values">
     configFilePath = "ProgramFolder/data/config.json"
 
-    userInfoFile = "ProgramFolder/data/userdata.json"
-    serverInfoDir = "ProgramFolder/serverTypes/"
-    instanceDataFile = "ProgramFolder/data/controllerInstances.json"
-    serverDir = "ServerFolder"
-    envDir = "ProgramFolder/Env"
-
-    socketPort = 10000
+    default_config = {
+        "userInfoFile": "ProgramFolder/data/userdata.json",
+        "serverInfoDir": "ProgramFolder/serverTypes/",
+        "instanceDataFile": "ProgramFolder/data/controllerInstances.json",
+        "serverDir": "ServerFolder",
+        "envDir": "ProgramFolder/Env",
+        "socketPort": 10000
+    }
 
     # </editor-fold>
 
@@ -58,9 +59,7 @@ def main():
         file.close()
     except IOError:
         data = ""
-        write_data = json.dumps({"userInfoFile": userInfoFile, "serverInfoDir": serverInfoDir,
-                                 "instanceDataFile": instanceDataFile, "serverDir": serverDir,
-                                 "envDir": envDir, "socketPort": socketPort})
+        write_data = json.dumps(default_config)
         try:
             file = open(configFilePath, "w")
             file.write(write_data)
@@ -71,13 +70,9 @@ def main():
         config = json.loads(data)
     except json.JSONDecodeError:
         config = {}
-    userInfoFile = config.get("userInfoFile", userInfoFile)
-    serverInfoDir = config.get("serverInfoDir", serverInfoDir)
-    instanceDataFile = config.get("instanceDataFile", instanceDataFile)
-    serverDir = config.get("serverDir", serverDir)
-    envDir = config.get("envDir", envDir)
-    socketPort = config.get("socketPort", socketPort)
 
+    for i in default_config:
+        config[i] = config.get(i, default_config[i])
     # </editor-fold>
 
     os.chdir(os.path.dirname(os.path.dirname(__file__)))
@@ -87,27 +82,27 @@ def main():
     Console = ConsoleUI()
     UserInfo = UserData()
     MainServer = Server()
-    Manager = ControllerManager.ControllerManager(Console, user_handles, PortHandler, envDir)
+    Manager = ControllerManager.ControllerManager(Console, user_handles, PortHandler, config['envDir'])
 
     Console.start()
     Console.update_prefix("->")
 
-    UserInfo.set_file_path(userInfoFile)
+    UserInfo.set_file_path(config["userInfoFile"])
     UserInfo.load()
 
-    Manager.set_server_types_dir(serverInfoDir)
-    Manager.set_instance_data_file(instanceDataFile)
-    Manager.set_server_dir(serverDir)
+    Manager.set_server_types_dir(config["serverInfoDir"])
+    Manager.set_instance_data_file(config["instanceDataFile"])
+    Manager.set_server_dir(config["serverDir"])
     Manager.init_commands()
     Manager.load_server_types()
     Manager.load_instances_from_file()
 
     Console.print(sys.version)
-    Console.print(f"Loaded {len(UserInfo.get_users())} user(s) from '{userInfoFile}'")
-    Console.print(f"Loaded {len(Manager.get_server_names())} server type(s) from '{serverInfoDir}'")
+    Console.print(f"Loaded {len(UserInfo.get_users())} user(s) from '{config['userInfoFile']}'")
+    Console.print(f"Loaded {len(Manager.get_server_names())} server type(s) from '{config['serverInfoDir']}'")
 
     server_port_handler = PortHandler()
-    MainServer.set_port(server_port_handler.request_port(socketPort))
+    MainServer.set_port(server_port_handler.request_port(config['socketPort']))
     MainServer.start()
     Console.print(f"Hosted socket server at {MainServer.get_ip()}:{MainServer.get_port()}")
 
@@ -143,9 +138,14 @@ def main():
             ControllerManager_.set_file(file)
             Manager.print_all("Reloaded controller manager")
 
+        if Manager.get_shutdown_needed():
+            Manager.print_all("Server Shutting down")
+            running = False
+
         Manager.flush_servers()
 
         for user in user_handles:
+            user.update()
             items = user.get_input()
             for i_ in items:
                 if len(i_) > 0:
@@ -157,10 +157,7 @@ def main():
                         command = parsed[0]
                         args = parsed[1:]
                         result = False
-                        if user.is_server() and command.lower() == "exit":
-                            running = False
-                            result = True
-                        elif user.is_server() and command.lower() == "clear":
+                        if user.is_server() and command.lower() == "clear":
                             Console.clear_console()
                             result = True
                         elif command.startswith("/"):
@@ -190,6 +187,9 @@ def main():
 
                         if not result:
                             user.print("Error: unknown command. Try the \"help\" command")
+
+    for handle in user_handles:
+        handle.exit()
 
     Console.print("Closing Server Instances")
     Manager.close_instances()

@@ -1,1 +1,1 @@
-{"Admin": {"data": {"permission": 0, "reset_password": true}, "hash": "f1a77610681ac6c8acb827faa7437c98625d11cd1f215d247a6851f37cd1b856", "salt": "XNhYD", "hash_type": "sha256", "time": "1632486697.1462824"}}
+{"Admin": {"data": {"permission": 5, "reset_password": false, "filter_data": {"filters": {"controllers": {"Minecraft": true}, "instances": {}}, "default": false, "enabled": true}}, "hash": "a73746dd176f46883e02809277aea65c63dee1798b133c0da7dff0231aadbb5a", "salt": "VEfhy", "hash_type": "sha256", "time": "1633351037.4604614"}}
