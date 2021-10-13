@@ -12,7 +12,6 @@ import sys
 import socket
 
 # STUFF TO DO
-# set run ip
 
 # LIKE TO DO
 # something with logging
@@ -27,6 +26,9 @@ import socket
 # execute commands from in game
 # permission tp view server output
 # obscure text when typing password
+# headless mode
+# import only required functions/classes
+# organize client application (its very messy and bad right now)
 
 # ---minecraft controller stuff
 # edit Settings

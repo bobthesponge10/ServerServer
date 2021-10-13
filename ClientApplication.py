@@ -2,6 +2,7 @@ from ProgramFolder.Classes import Client
 from ProgramFolder.Classes import ConsoleUI
 from ProgramFolder.Classes import UserData
 import time
+import json
 
 
 def change_password(console_, client_, algorithm):
@@ -21,13 +22,48 @@ def change_password(console_, client_, algorithm):
     console_.clear_input_history()
 
 
-ip = "127.0.0.1"
-port = 10000
+config_file = "config.json"
+starting_prefix = "->"
 
+# <editor-fold desc="Loads config data from file">
+
+ip = ""
+port = -1
+
+try:
+    file = open(config_file, "r")
+    data = file.read()
+    file.close()
+except IOError:
+    data = ""
+try:
+    config = json.loads(data)
+except json.JSONDecodeError:
+    config = {}
+
+ip = config.get("ip", ip)
+port = config.get("port", port)
+
+# </editor-fold>
+
+valid_address = True
+if port <= 0 or port > 65535:
+    valid_address = False
+elif len(ip.split("."))!=4:
+    valid_address = False
 
 console = ConsoleUI()
 console.start()
 
+if not valid_address:
+    console.update_prefix("Address: ")
+    address = console.wait_get_input()+":"
+    ip = address.split(":")[0]
+    try:
+        port = int(address.split(":")[1])
+    except ValueError:
+        port = 10000
+    console.update_prefix(starting_prefix)
 
 C = Client()
 C.set_ip(ip)
@@ -87,7 +123,7 @@ console.clear_input_history()
 console.clear_console()
 password = ""
 console.print(f"Successfully logged in as: {username}")
-console.update_prefix("->")
+console.update_prefix(starting_prefix)
 running = C.get_running()
 while running:
     time.sleep(0.1)

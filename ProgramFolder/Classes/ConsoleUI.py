@@ -56,6 +56,14 @@ class ConsoleUI(Thread):
                 break
         return out
 
+    def wait_get_input(self, timeout: float = None) -> str:
+        """
+        Waits till user sends input.
+        :param timeout: Timeout to use
+        :return: The string the user entered
+        """
+        return self._queue.get(True, timeout)
+
     def print(self, string: object, newline: bool = True, loop: bool = True):
         """
         Prints a string to the user's console. (Any code that doesn't fit will either loop or get cut)
