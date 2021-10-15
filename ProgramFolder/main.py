@@ -7,7 +7,7 @@ from Classes import functions
 from Classes import PortHandler
 from json import dumps, loads, JSONDecodeError
 from time import sleep
-from os import chdir
+from os import chdir, getcwd
 from os import path as ospath
 from sys import version
 from socket import gethostbyname, gethostname
@@ -84,7 +84,10 @@ def main():
         config["ip"] = gethostbyname(gethostname())
     PortHandler.set_ip(config["ip"])
 
-    chdir(ospath.dirname(ospath.dirname(ospath.abspath(__file__))))
+    new_path = ospath.dirname(ospath.abspath(__file__))
+    if not new_path.endswith("ServerServer"):
+        new_path = ospath.dirname(new_path)
+    chdir(new_path)
 
     user_handles = []
 

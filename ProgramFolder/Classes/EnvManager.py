@@ -12,8 +12,8 @@ class EnvManager:
         self.env_path = env_path
         self.java_path = "java"
         self.java_exe_path = "bin/java"
-        sys = system()
-        if sys == "Windows":
+        self.sys = system()
+        if self.sys == "Windows":
             self.java_exe_path += ".exe"
 
         self.temp_path = "temp"
@@ -22,7 +22,6 @@ class EnvManager:
         return self.env_path
 
     def install_java(self):
-        sys = system()
         url = ""
         format_ = ""
         temp_dir = ospath.join(self.env_path, self.temp_path)
@@ -33,13 +32,13 @@ class EnvManager:
 
         if not ospath.isdir(temp_dir):
             makedirs(temp_dir)
-        if sys == "Windows":
+        if self.sys == "Windows":
             url = "https://download.oracle.com/java/17/latest/jdk-17_windows-x64_bin.zip"
             format_ = ".zip"
-        elif sys == "Linux":
+        elif self.sys == "Linux":
             url = "https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz"
             format_ = ".tar.gz"
-        elif sys == "Darwin":
+        elif self.sys == "Darwin":
             url = "https://download.oracle.com/java/17/latest/jdk-17_macos-x64_bin.tar.gz"
             format_ = ".tar.gz"
 
@@ -92,6 +91,7 @@ class EnvManager:
 
             t.close()
             remove(temp_file)
+            return True
         return False
 
     def java_is_installed(self):
@@ -101,5 +101,7 @@ class EnvManager:
     def get_java_executor(self):
         java_path = ospath.join(self.env_path, self.java_path, self.java_exe_path)
         if ospath.isfile(java_path):
+            if self.sys == "Linux":
+                return "."+ospath.abspath(java_path)
             return ospath.abspath(java_path)
         return "java"
