@@ -101,7 +101,5 @@ class EnvManager:
     def get_java_executor(self):
         java_path = ospath.join(self.env_path, self.java_path, self.java_exe_path)
         if ospath.isfile(java_path):
-            if self.sys == "Linux":
-                return "."+ospath.abspath(java_path)
             return ospath.abspath(java_path)
         return "java"

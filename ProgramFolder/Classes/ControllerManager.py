@@ -85,6 +85,16 @@ class ControllerManager:
 
         ignore = ["-", "_", " "]
 
+        @cls.add_command(["debug"], global_function=True)
+        def debug_function(self, handle, *args, **kwargs):
+            handle.print("test")
+            for user in self.handle_list:
+                handle.print("-----")
+                handle.print(user.get_username())
+                handle.print(user.id)
+                handle.print(user.obj)
+                handle.print(user.server)
+
         @cls.add_command(["help", "h"], ignore_chars=ignore, global_function=True, default="help",
                          help_info="Use this command to find out how to use a command. Ex: help <command>")
         def help(self, handle, *args, controller="", instance="", **kwargs):
@@ -835,8 +845,12 @@ class ControllerManager:
         return True
 
     def print_all(self, value, focus=None):
+        usernames = []
         for user in self.handle_list:
-            self.print(user.get_username(), value, focus=focus)
+            name = user.get_username()
+            if name not in usernames:
+                usernames.append(name)
+                self.print(name, value, focus=focus)
 
     def print(self, username, value, focus=None):
         found = False

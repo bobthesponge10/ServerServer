@@ -178,8 +178,9 @@ class Server(Thread):
                     id_ = -1
                     data = b""
                     for ids in self.clients:
-                        if self.clients[ids].get_socket:
+                        if self.clients[ids].get_socket() == sock:
                             id_ = ids
+                            break
                     error = False
                     try:
                         data = sock.recv(1024)
@@ -188,7 +189,7 @@ class Server(Thread):
                     except sock_error:
                         error = True
                     if error:
-                        if id != -1:
+                        if id_ != -1:
                             self.close_connection(id_)
                             continue
                     if id_ != -1:

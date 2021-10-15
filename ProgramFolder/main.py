@@ -156,7 +156,6 @@ def main():
             running = False
 
         Manager.flush_servers()
-
         for user in user_handles:
             user.update()
             items = user.get_input()
