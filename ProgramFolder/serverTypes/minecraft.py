@@ -47,6 +47,9 @@ class Controller(BaseController):
 
         self.property_file_name = "server.properties"
 
+    def get_info(self):
+        return f"Version: {self.version}"
+
     def save_data(self):
         self.data = {"port": self.port,
                      "jar_name": self.jar_name,

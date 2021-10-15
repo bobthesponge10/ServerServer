@@ -195,6 +195,9 @@ class BaseController:
     def get_address(self):
         return self.address
 
+    def get_info(self):
+        return ""
+
     def start(self):
         raise NotImplemented
 

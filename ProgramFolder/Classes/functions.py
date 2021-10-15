@@ -1,6 +1,7 @@
 from subprocess import check_call, CalledProcessError
 from sys import executable
 from platform import system
+from importlib import util, reload
 
 
 def install_requirements(requirements):
@@ -13,27 +14,15 @@ def install_requirements(requirements):
         pass
 
 
-try:
-    from importlib import util
-    import importlib
+def module_from_file(file, module_name):
+    spec = util.spec_from_file_location(module_name, file)
+    module = util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return getattr(module, module_name)
 
-    def module_from_file(file, module_name):
-        spec = importlib.util.spec_from_file_location(module_name, file)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return getattr(module, module_name)
 
-    def reload_module(module):
-        return importlib.reload(module)
-except ImportError:
-    import imp
-
-    def module_from_file(file, module_name):
-        module = imp.load_source(module_name, file)
-        return getattr(module, module_name)
-
-    def reload_module(module):
-        return imp.reload(module)
+def reload_module(module):
+    return reload(module)
 
 
 def parse_string_for_commands(string):

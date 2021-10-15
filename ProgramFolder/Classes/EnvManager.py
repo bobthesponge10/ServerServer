@@ -1,9 +1,10 @@
-import os
-import platform
-import requests
-import shutil
+from os import path as ospath
+from os import makedirs, remove
+from platform import system
+from requests import get
+from shutil import rmtree, copyfileobj
 from zipfile import ZipFile
-import tarfile
+from tarfile import open as open_tar
 
 
 class EnvManager:
@@ -11,7 +12,7 @@ class EnvManager:
         self.env_path = env_path
         self.java_path = "java"
         self.java_exe_path = "bin/java"
-        sys = platform.system()
+        sys = system()
         if sys == "Windows":
             self.java_exe_path += ".exe"
 
@@ -21,84 +22,84 @@ class EnvManager:
         return self.env_path
 
     def install_java(self):
-        sys = platform.system()
+        sys = system()
         url = ""
-        format = ""
-        temp_dir = os.path.join(self.env_path, self.temp_path)
-        temp_file = os.path.join(temp_dir, "temp_java")
-        java_path = os.path.join(self.env_path, self.java_path)
-        if os.path.isdir(java_path):
-            shutil.rmtree(java_path)
+        format_ = ""
+        temp_dir = ospath.join(self.env_path, self.temp_path)
+        temp_file = ospath.join(temp_dir, "temp_java")
+        java_path = ospath.join(self.env_path, self.java_path)
+        if ospath.isdir(java_path):
+            rmtree(java_path)
 
-        if not os.path.isdir(temp_dir):
-            os.makedirs(temp_dir)
+        if not ospath.isdir(temp_dir):
+            makedirs(temp_dir)
         if sys == "Windows":
             url = "https://download.oracle.com/java/17/latest/jdk-17_windows-x64_bin.zip"
-            format = ".zip"
+            format_ = ".zip"
         elif sys == "Linux":
             url = "https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz"
-            format = ".tar.gz"
+            format_ = ".tar.gz"
         elif sys == "Darwin":
             url = "https://download.oracle.com/java/17/latest/jdk-17_macos-x64_bin.tar.gz"
-            format = ".tar.gz"
+            format_ = ".tar.gz"
 
-        temp_file += format
+        temp_file += format_
 
         if not url:
             return False
 
-        data = requests.get(url).content
+        data = get(url).content
         file = open(temp_file, "wb")
         file.write(data)
         file.close()
 
-        if format == ".zip":
+        if format_ == ".zip":
             z = ZipFile(temp_file)
             for member in z.namelist():
-                base = os.path.basename(member)
+                base = ospath.basename(member)
                 sep = member[-(len(base)+1)]
-                p = os.path.sep.join(member.split(sep)[1:])
-                if len(p) > 0 and p[-1] != os.path.sep:
+                p = ospath.sep.join(member.split(sep)[1:])
+                if len(p) > 0 and p[-1] != ospath.sep:
 
-                    d = os.path.sep.join(p.split(os.path.sep)[:-1])
-                    d = os.path.join(java_path, d)
-                    if not os.path.isdir(d):
-                        os.makedirs(d)
+                    d = ospath.sep.join(p.split(ospath.sep)[:-1])
+                    d = ospath.join(java_path, d)
+                    if not ospath.isdir(d):
+                        makedirs(d)
                     source = z.open(member)
-                    target = open(os.path.join(java_path, p), "wb")
+                    target = open(ospath.join(java_path, p), "wb")
                     with source, target:
-                        shutil.copyfileobj(source, target)
+                        copyfileobj(source, target)
 
             z.close()
-            os.remove(temp_file)
+            remove(temp_file)
             return True
-        elif format == ".tar.gz":
-            t = tarfile.open(temp_file, "r:gz")
+        elif format_ == ".tar.gz":
+            t = open_tar(temp_file, "r:gz")
             for member in t.getnames():
-                base = os.path.basename(member)
+                base = ospath.basename(member)
                 sep = member[-(len(base) + 1)]
-                p = os.path.sep.join(member.split(sep)[1:])
-                if len(p) > 0 and p[-1] != os.path.sep:
+                p = ospath.sep.join(member.split(sep)[1:])
+                if len(p) > 0 and p[-1] != ospath.sep:
 
-                    d = os.path.sep.join(p.split(os.path.sep)[:-1])
-                    d = os.path.join(java_path, d)
-                    if not os.path.isdir(d):
-                        os.makedirs(d)
+                    d = ospath.sep.join(p.split(ospath.sep)[:-1])
+                    d = ospath.join(java_path, d)
+                    if not ospath.isdir(d):
+                        makedirs(d)
                     source = t.extractfile(member)
-                    target = open(os.path.join(java_path, p), "wb")
+                    target = open(ospath.join(java_path, p), "wb")
                     with source, target:
-                        shutil.copyfileobj(source, target)
+                        copyfileobj(source, target)
 
             t.close()
-            os.remove(temp_file)
+            remove(temp_file)
         return False
 
     def java_is_installed(self):
-        java_path = os.path.join(self.env_path, self.java_path, self.java_exe_path)
-        return os.path.isfile(java_path)
+        java_path = ospath.join(self.env_path, self.java_path, self.java_exe_path)
+        return ospath.isfile(java_path)
 
     def get_java_executor(self):
-        java_path = os.path.join(self.env_path, self.java_path, self.java_exe_path)
-        if os.path.isfile(java_path):
-            return os.path.abspath(java_path)
+        java_path = ospath.join(self.env_path, self.java_path, self.java_exe_path)
+        if ospath.isfile(java_path):
+            return ospath.abspath(java_path)
         return "java"

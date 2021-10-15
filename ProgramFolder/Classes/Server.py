@@ -1,15 +1,13 @@
-import socket
-import select
-import time
-import pickle
-import json
+from socket import socket
+from socket import error as sock_error
+from select import select
+from time import sleep
+from pickle import dumps, load, PickleError, HIGHEST_PROTOCOL
+from json import dumps as j_dumps
+from json import loads as j_loads
 from threading import Thread
-try:
-    import queue
-except ImportError:
-    import Queue as queue
-
-import io
+from queue import Queue, Empty
+from io import BytesIO
 
 
 class ClientHandler:
@@ -21,7 +19,7 @@ class ClientHandler:
         self.server = server
 
         self.bytes = b""
-        self.bytes_queue = queue.Queue()
+        self.bytes_queue = Queue()
 
     def get_id(self):
         return self.id
@@ -38,10 +36,10 @@ class ClientHandler:
     def send_packet(self, packet):
         try:
             if self.version != -1:
-                self.socket.send(pickle.dumps(packet, protocol=self.version))
+                self.socket.send(dumps(packet, protocol=self.version))
             else:
-                self.socket.send(json.dumps(packet).encode() + b"\x00")
-        except socket.error:
+                self.socket.send(j_dumps(packet).encode() + b"\x00")
+        except sock_error:
             self.close()
 
     def close(self):
@@ -54,7 +52,7 @@ class ClientHandler:
         while self.bytes_queue.qsize() > 0:
             try:
                 self.bytes += self.bytes_queue.get(False)
-            except queue.Empty:
+            except Empty:
                 break
 
     def get_packet(self):
@@ -64,12 +62,12 @@ class ClientHandler:
 
         if self.version != -1:
             try:
-                stream = io.BytesIO(self.bytes)
-                decoded = pickle.load(stream)
+                stream = BytesIO(self.bytes)
+                decoded = load(stream)
                 self.bytes = stream.read()
                 stream.close()
                 return decoded
-            except (pickle.PickleError, EOFError):
+            except (PickleError, EOFError):
                 return None
         else:
             p = self.bytes.find(b"\x00")
@@ -77,7 +75,7 @@ class ClientHandler:
                 packet = self.bytes[:p]
                 self.bytes = self.bytes[p + 1:]
                 s = packet.decode()
-                decoded = json.loads(s)
+                decoded = j_loads(s)
                 return decoded
             return None
 
@@ -96,16 +94,16 @@ class Server(Thread):
     def __init__(self, logger=None):
         super(Server, self).__init__()
         self.wait_time = 0.1
-        self.pickle_encoding = pickle.HIGHEST_PROTOCOL
+        self.pickle_encoding = HIGHEST_PROTOCOL
 
         self.stopping = False
         self.running = False
         self.current_id = 0
         self.clients = {}
-        self.new_connections = queue.Queue()
-        self.old_connections = queue.Queue()
+        self.new_connections = Queue()
+        self.old_connections = Queue()
 
-        self.socket = socket.socket()
+        self.socket = socket()
         self.port = 10000
         self.ip = "127.0.0.1"
         self.socket_list = []
@@ -120,20 +118,20 @@ class Server(Thread):
             self.new_connections.empty()
             self.old_connections.empty()
 
-            self.socket = socket.socket()
+            self.socket = socket()
 
             fails = 0
             while True:
                 try:
                     self.socket.bind((self.ip, self.port))
                     break
-                except:
+                except sock_error:
                     if fails >= 10:
                         self.log("Failed socket bind " + str(fails) + " times, shutting down")
                         return
                     fails += 1
                     self.log("Failed socket bind, trying again")
-                    time.sleep(1)
+                    sleep(1)
             self.socket.listen(10)
 
             self.update_sockets()
@@ -151,12 +149,12 @@ class Server(Thread):
         running = self.running
         while running:
             if self.wait_time > 0:
-                time.sleep(self.wait_time)
+                sleep(self.wait_time)
             if self.stopping:
                 running = False
                 self.socket.close()
                 continue
-            read_sockets, write_sockets, error_sockets = select.select(self.socket_list, [], [], 0)
+            read_sockets, write_sockets, error_sockets = select(self.socket_list, [], [], 0)
             for sock in read_sockets:
                 if sock == self.socket:
                     try:
@@ -164,7 +162,7 @@ class Server(Thread):
                         new_socket.send(str(self.pickle_encoding).encode())
                         client_version = new_socket.recv(2).decode()
                         new_socket_version = int(client_version)
-                    except socket.error:
+                    except sock_error:
                         continue
 
                     client = ClientHandler(self.current_id,
@@ -187,7 +185,7 @@ class Server(Thread):
                         data = sock.recv(1024)
                         if len(data) == 0:
                             error = True
-                    except socket.error:
+                    except sock_error:
                         error = True
                     if error:
                         if id != -1:
@@ -229,7 +227,7 @@ class Server(Thread):
         while self.new_connections.qsize() > 0:
             try:
                 out.append(self.new_connections.get(False))
-            except queue.Empty:
+            except Empty:
                 break
         return out
 
@@ -238,7 +236,7 @@ class Server(Thread):
         while self.old_connections.qsize() > 0:
             try:
                 out.append(self.old_connections.get())
-            except queue.Empty:
+            except Empty:
                 break
         return out
 
@@ -248,7 +246,7 @@ class Server(Thread):
             client = self.clients[id_]
             try:
                 client.socket.shutdown(2)
-            except socket.error:
+            except sock_error:
                 pass
             client.socket.close()
             del self.clients[id_]

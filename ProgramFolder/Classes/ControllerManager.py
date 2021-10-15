@@ -517,10 +517,14 @@ class ControllerManager:
             if not m:
                 handle.print(f"Error: Cannot find instance with name: {args[1]}.")
                 return False
-            handle.print(f"Name: {args[1]}"
-                         f"\nController: {args[0]}"
-                         f"\nRunning: {m.get_running()}"
-                         f"\nAddress: {m.get_address()}")
+            output = f"Name: {args[1]}"\
+                     f"\nController: {args[0]}"\
+                     f"\nRunning: {m.get_running()}"\
+                     f"\nAddress: {m.get_address()}"
+            instance_info = m.get_info()
+            if instance_info:
+                output += f"\n{instance_info}"
+            handle.print(output)
 
         @cls.add_command(["start"], ignore_chars=ignore, global_function=True, permission=3,
                          help_info="Starts an instance.\nEx: start <controller> <instance>")

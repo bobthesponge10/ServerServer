@@ -28,7 +28,6 @@ from socket import gethostbyname, gethostname
 # permission tp view server output
 # obscure text when typing password
 # headless mode
-# import only required functions/classes
 # organize client application (its very messy and bad right now)
 
 # ---minecraft controller stuff

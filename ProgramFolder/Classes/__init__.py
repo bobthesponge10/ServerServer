@@ -1,7 +1,7 @@
 from .functions import install_requirements as __install_requirements
-import os
+from os import path, chdir
 
-os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+chdir(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
 
 __install_requirements("ProgramFolder/data/requirements.txt")
 

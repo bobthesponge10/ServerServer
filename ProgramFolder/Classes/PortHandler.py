@@ -1,6 +1,3 @@
-import socket
-
-
 class PortHandler:
     all_ports = []
     ip = ""
