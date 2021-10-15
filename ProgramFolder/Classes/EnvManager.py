@@ -38,6 +38,9 @@ class EnvManager:
         elif sys == "Linux":
             url = "https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz"
             format = ".tar.gz"
+        elif sys == "Darwin":
+            url = "https://download.oracle.com/java/17/latest/jdk-17_macos-x64_bin.tar.gz"
+            format = ".tar.gz"
 
         temp_file += format
 
