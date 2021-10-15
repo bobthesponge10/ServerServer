@@ -1,11 +1,15 @@
-import subprocess
-import sys
+from subprocess import check_call, CalledProcessError
+from sys import executable
+from platform import system
 
 
 def install_requirements(requirements):
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "-r", requirements])
-    except subprocess.CalledProcessError:
+        if system() == "Linux":
+            check_call(["sudo", executable, "-m", "pip", "install", "-q", "-r", requirements])
+        else:
+            check_call([executable, "-m", "pip", "install", "-q", "-r", requirements])
+    except CalledProcessError:
         pass
 
 
