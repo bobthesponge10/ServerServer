@@ -84,7 +84,7 @@ def main():
         config["ip"] = gethostbyname(gethostname())
     PortHandler.set_ip(config["ip"])
 
-    chdir(ospath.dirname(ospath.dirname(__file__)))
+    chdir(ospath.dirname(ospath.dirname(ospath.abspath(__file__))))
 
     user_handles = []
 

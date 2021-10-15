@@ -390,6 +390,7 @@ class ControllerManager:
             users_dup = [i.get_username() for i in self.handle_list if not i.is_server()]
             users = []
             users = [i for i in users_dup if i not in users]
+            users = [f"{i+1}: {v}" for i,v in enumerate(users)]
             if len(users) > 0:
                 handle.print(f"{len(users)} total user(s) over {len(users_dup)} connection(s)\n"+"\n".join(users))
             else:
@@ -500,6 +501,7 @@ class ControllerManager:
             if len(out) == 0:
                 handle.print("No instances to list.")
                 return False
+            out = [f"{i + 1}: {v}" for i, v in enumerate(out)]
             handle.print("\n".join(out))
             return True
 
