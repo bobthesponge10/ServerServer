@@ -5,11 +5,12 @@ from Classes import ControllerManager
 from Classes import UserHandle
 from Classes import functions
 from Classes import PortHandler
-import json
-import time
-import os
-import sys
-import socket
+from json import dumps, loads, JSONDecodeError
+from time import sleep
+from os import chdir
+from os import path as ospath
+from sys import version
+from socket import gethostbyname, gethostname
 
 # STUFF TO DO
 
@@ -64,7 +65,7 @@ def main():
         file.close()
     except IOError:
         data = ""
-        write_data = json.dumps(default_config)
+        write_data = dumps(default_config)
         try:
             file = open(configFilePath, "w")
             file.write(write_data)
@@ -72,8 +73,8 @@ def main():
         except IOError:
             pass
     try:
-        config = json.loads(data)
-    except json.JSONDecodeError:
+        config = loads(data)
+    except JSONDecodeError:
         config = {}
 
     for i in default_config:
@@ -81,10 +82,10 @@ def main():
     # </editor-fold>
 
     if not isinstance(config["ip"], str) or len(config["ip"].split(".")) != 4:
-        config["ip"] = socket.gethostbyname(socket.gethostname())
+        config["ip"] = gethostbyname(gethostname())
     PortHandler.set_ip(config["ip"])
 
-    os.chdir(os.path.dirname(os.path.dirname(__file__)))
+    chdir(ospath.dirname(ospath.dirname(__file__)))
 
     user_handles = []
 
@@ -106,7 +107,7 @@ def main():
     Manager.load_server_types()
     Manager.load_instances_from_file()
 
-    Console.print(sys.version)
+    Console.print(version)
     Console.print(f"Loaded {len(UserInfo.get_users())} user(s) from '{config['userInfoFile']}'")
     Console.print(f"Loaded {len(Manager.get_server_names())} server type(s) from '{config['serverInfoDir']}'")
 
@@ -121,7 +122,7 @@ def main():
 
     running = True
     while running:
-        time.sleep(0.01)
+        sleep(0.01)
 
         for i in MainServer.get_new_connections():
             connection = MainServer.get_client_from_id(i)
@@ -211,10 +212,10 @@ def main():
     MainServer.stop()
 
     while MainServer.running:
-        time.sleep(0.25)
+        sleep(0.25)
 
     Console.print("Goodbye")
-    time.sleep(0.5)
+    sleep(0.5)
     Console.stop()
 
 

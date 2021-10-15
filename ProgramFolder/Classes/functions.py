@@ -3,7 +3,10 @@ import sys
 
 
 def install_requirements(requirements):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "-r", requirements])
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "-r", requirements])
+    except subprocess.CalledProcessError:
+        pass
 
 
 try:

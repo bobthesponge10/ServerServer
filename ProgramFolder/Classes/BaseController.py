@@ -1,7 +1,8 @@
 from .functions import remove_chars
 from queue import Queue, Empty
-import os
-import shutil
+from os import path as ospath
+from os import makedirs
+from shutil import rmtree
 
 
 class BaseController:
@@ -128,9 +129,9 @@ class BaseController:
 
         self.address = ""
 
-        self.path = os.path.join(self.base_dir, self.type, self.name)
-        if not os.path.isdir(self.path):
-            os.makedirs(self.path)
+        self.path = ospath.join(self.base_dir, self.type, self.name)
+        if not ospath.isdir(self.path):
+            makedirs(self.path)
 
         self._data = data
 
@@ -140,7 +141,7 @@ class BaseController:
 
     def remove(self):
         self.parent_object.objects.remove(self)
-        shutil.rmtree(self.path)
+        rmtree(self.path)
         self.port_handler.remove()
 
     def set_parent_object(self, parent_object):

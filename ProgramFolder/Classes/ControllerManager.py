@@ -1,9 +1,10 @@
-import os
+from os import path as ospath
+from os import listdir
 from .functions import module_from_file, remove_chars
 from .EnvManager import EnvManager
-import inspect
-import json
-import time
+from inspect import getfile
+from json import loads, dumps, decoder
+from time import sleep
 
 
 class ControllerManager:
@@ -58,7 +59,7 @@ class ControllerManager:
     @classmethod
     def get_file(cls):
         if not cls.file:
-            return inspect.getfile(cls)
+            return getfile(cls)
         return cls.file
 
     @classmethod
@@ -721,13 +722,13 @@ class ControllerManager:
     def load_server_types(self):
         if not self.server_types_dir:
             return False
-        files = os.listdir(self.server_types_dir)
+        files = listdir(self.server_types_dir)
         loaded_files = [self.server_types[i]["file"] for i in self.server_types]
         for file in files:
             if file.endswith(".py"):
                 if file not in loaded_files:
                     try:
-                        module = module_from_file(os.path.join(self.server_types_dir, file), "Controller")
+                        module = module_from_file(ospath.join(self.server_types_dir, file), "Controller")
                         module.set_manager(self)
                         module.init_commands()
                         self.server_types[module.type] = {"module": module, "file": file}
@@ -745,7 +746,7 @@ class ControllerManager:
             obj = module.get_objects()
 
             try:
-                new_mod = module_from_file(os.path.join(self.server_types_dir, file), "Controller")
+                new_mod = module_from_file(ospath.join(self.server_types_dir, file), "Controller")
                 new_mod.reset_commands()
                 new_mod.set_manager(self)
                 new_mod.set_objects(obj)
@@ -794,10 +795,10 @@ class ControllerManager:
     def load_instances_from_file(self):
         file = open(self.instances_data_file, "r")
         try:
-            data = json.loads(file.read())
+            data = loads(file.read())
         except IOError:
             return False
-        except json.decoder.JSONDecodeError:
+        except decoder.JSONDecodeError:
             return False
         file.close()
 
@@ -823,7 +824,7 @@ class ControllerManager:
                 data[i].append({"name": instance.get_name(), "data": instance.get_data()})
 
         file = open(self.instances_data_file, "w")
-        file.write(json.dumps(data))
+        file.write(dumps(data))
         file.close()
         return True
 
@@ -862,7 +863,7 @@ class ControllerManager:
 
         running = True
         while running:
-            time.sleep(0.1)
+            sleep(0.1)
             running = False
             for cont in self.instances:
                 for ins in self.instances[cont]:

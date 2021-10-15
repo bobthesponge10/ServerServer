@@ -5,5 +5,5 @@
   "serverDir":"ServerFolder",
   "envDir":"ProgramFolder/Env",
   "socketPort": 10000,
-  "ip": "127.0.0.1"
+  "ip": ""
 }

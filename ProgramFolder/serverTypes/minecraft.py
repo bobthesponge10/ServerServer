@@ -1,10 +1,11 @@
 from Classes import BaseController
-import requests
-import os
-import subprocess
+from requests import get
+from os import path as ospath
+from os import chdir, getcwd
+from subprocess import Popen, PIPE
 from threading import Thread
-import time
-import json
+from time import sleep
+from json import loads
 
 
 class Controller(BaseController):
@@ -67,17 +68,17 @@ class Controller(BaseController):
 
     def run_server(self):
         java_path = self.get_java_path()
-        old_dir = os.path.abspath(os.getcwd())
-        os.chdir(self.path)
+        old_dir = ospath.abspath(getcwd())
+        chdir(self.path)
         self.add_to_queue(f"Starting server at port: {self.port}")
-        self.process = subprocess.Popen(
+        self.process = Popen(
             f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        os.chdir(old_dir)
+            stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        chdir(old_dir)
         poll = self.process.poll()
 
         while poll is None:
-            time.sleep(0.1)
+            sleep(0.1)
             out = self.process.stdout.readline().decode()
             out = out.replace("\n", "")
             if len(out) > 0:
@@ -106,21 +107,21 @@ class Controller(BaseController):
 
     def initial_setup(self):
         java_path = self.get_java_path()
-        old_dir = os.path.abspath(os.getcwd())
-        if not os.path.isfile(os.path.join(self.path, self.jar_name)):
+        old_dir = ospath.abspath(getcwd())
+        if not ospath.isfile(ospath.join(self.path, self.jar_name)):
             self.add_to_queue("Jar file missing")
             if not self.download_jar():
                 return False
 
         self.write_properties()
 
-        if not os.path.isfile(os.path.join(self.path, "eula.txt")):
+        if not ospath.isfile(ospath.join(self.path, "eula.txt")):
             self.add_to_queue("Running setup for eula")
-            os.chdir(self.path)
-            self.process = subprocess.Popen(
+            chdir(self.path)
+            self.process = Popen(
                 f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            os.chdir(old_dir)
+                stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            chdir(old_dir)
             self.process.stdin.write(b"stop\n")
             self.process.stdin.flush()
             self.process.communicate()
@@ -130,29 +131,29 @@ class Controller(BaseController):
                 return False
             self.process = None
 
-        if os.path.isfile(os.path.join(self.path, "eula.txt")):
-            eula = open(os.path.join(self.path, "eula.txt"), "r")
+        if ospath.isfile(ospath.join(self.path, "eula.txt")):
+            eula = open(ospath.join(self.path, "eula.txt"), "r")
             data = eula.read()
             eula.close()
-            if "eula=true" in data and os.path.isdir(self.world_file):
-                os.chdir(old_dir)
+            if "eula=true" in data and ospath.isdir(self.world_file):
+                chdir(old_dir)
                 return
             self.add_to_queue("Editing eula")
-            eula = open(os.path.join(self.path, "eula.txt"), "w")
+            eula = open(ospath.join(self.path, "eula.txt"), "w")
             data = data.replace("eula=false", "eula=true")
             eula.write(data)
             eula.close()
 
         self.add_to_queue("Running initial setup")
-        os.chdir(self.path)
-        self.process = subprocess.Popen(f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
-                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        os.chdir(old_dir)
+        chdir(self.path)
+        self.process = Popen(f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} "
+                             f"nogui", stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        chdir(old_dir)
         self.process.stdin.write(b"stop\n")
         self.process.stdin.flush()
         self.process.communicate()
         self.process = None
-        os.chdir(old_dir)
+        chdir(old_dir)
         self.add_to_queue("Finished initial setup")
         return True
 
@@ -160,8 +161,8 @@ class Controller(BaseController):
         data = []
         out = []
         properties = {"server-port": self.port, "server-ip": self.port_handler.get_ip(), "level-name": self.world_file}
-        if os.path.isfile(self.property_file_name):
-            file = open(os.path.join(self.path, self.property_file_name), "r")
+        if ospath.isfile(self.property_file_name):
+            file = open(ospath.join(self.path, self.property_file_name), "r")
             data = file.read().split("\n")
             file.close()
 
@@ -182,7 +183,7 @@ class Controller(BaseController):
 
         data = "\n".join(out)
 
-        file = open(os.path.join(self.path, self.property_file_name), "w")
+        file = open(ospath.join(self.path, self.property_file_name), "w")
         file.write(data)
         file.close()
 
@@ -193,8 +194,8 @@ class Controller(BaseController):
         url = list_[0].get("url")
         if not url:
             return None
-        raw = requests.get(url).text
-        j = json.loads(raw)
+        raw = get(url).text
+        j = loads(raw)
         server = j.get("downloads", {}).get("server")
         if not server:
             return None
@@ -204,7 +205,7 @@ class Controller(BaseController):
         return download_url
 
     def download_jar(self):
-        if not os.path.isfile(self.jar_name):
+        if not ospath.isfile(self.jar_name):
             self.add_to_queue("Downloading jar file")
             download_url = self.get_download_url()
 
@@ -218,12 +219,12 @@ class Controller(BaseController):
                 self.add_to_queue("Failed to download server")
                 return False
 
-            data = requests.get(download_url).content
+            data = get(download_url).content
             if not data:
                 self.add_to_queue("Failed to download server")
                 return False
             try:
-                file = open(os.path.join(self.path, self.jar_name), "wb")
+                file = open(ospath.join(self.path, self.jar_name), "wb")
                 file.write(data)
                 file.close()
             except IOError:
@@ -232,14 +233,14 @@ class Controller(BaseController):
             return True
 
     def load_minecraft_jar_versions(self):
-        raw = requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").text
-        j = json.loads(raw)
+        raw = get("https://launchermeta.mojang.com/mc/game/version_manifest.json").text
+        j = loads(raw)
         versions = j.get("versions")
         self.minecraft_jar_versions = versions
 
     def set_version_to_latest(self):
-        raw = requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").text
-        j = json.loads(raw)
+        raw = get("https://launchermeta.mojang.com/mc/game/version_manifest.json").text
+        j = loads(raw)
         version = j.get("latest").get("release")
         self.version = version
 

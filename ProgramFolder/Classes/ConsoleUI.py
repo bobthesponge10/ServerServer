@@ -43,6 +43,8 @@ class ConsoleUI(Thread):
 
         self._select_pos = -1
 
+        self.obscure_input = False
+
     def get_input(self) -> List[str]:
         """
         Get a list of all the inputs from the user.
