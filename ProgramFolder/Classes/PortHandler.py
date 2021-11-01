@@ -124,8 +124,3 @@ class Upnp:
         doc.appendChild(envelope)
 
         pure_xml = doc.toxml()
-
-
-u = Upnp()
-print(u.search())
-

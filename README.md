@@ -42,4 +42,27 @@ What commands are available to the user depend on the users scope.
 A users scope by default is the base scope. Meaning they can only execute commands 
 in the base scope and not commands added from the different Controllers.
 
+There are two ways to execute a command in a specific scope. 
+
+The first way is to specify the scope in front of the command.
+The scope can be the scope of a Controller or it can be the scope of a Server that is a member
+of a Controller
+    
+    /Controller/Server:command
+    or
+    /Controller:command
+    
+The second way to specify the scope of a command is to focus onto a specific scope.
+When focused on a scope, every command entered is entered within that scope and any output from 
+something not in that scope is not displayed. This can be done to focus on a Controller or just a specific server.
+    
+    focus Controller
+    or
+    focus Controller Servers
+To un-focus back to the base scope just use the "unfocus" command.
+
+### Filtering
+Filtering is similar to focusing on a scope because it limits the output of servers to the user.
+Filtering can be used 
+
 ## Command List
