@@ -16,16 +16,17 @@ or by connecting to it through the client application. Commands can be defined i
 The first place is in the base scope and that is within the ControllerManager.py file. The second place is
 in the Controller files themselves. For example within the minecraft.py file. 
 
-The base functions are intended to be
-general functions that are needed for the Server Server to have core functionality. The commands within the Controller files
-are intended to be used to control and interact with that specific Controller and its servers that it is hosting which is 
-expanded upon in the "Controllers and Servers" section.
+The base functions are intended to be general functions that are needed for the Server Server to have core functionality. 
+The commands within the Controller files are intended to be used to control and interact with that specific Controller 
+and its servers that it is hosting which is expanded upon in the "Focus" section.
 
 A few base commands include:
  - create_server
  - remove_server
  - list_servers
- - start_server
+ - start
+ - stop
+ - shutdown
 
 A list of all commands can be viewed by using the "commands" command and command 
 info can be found by using the "help" command. Example:
@@ -36,6 +37,31 @@ Commands in the server are just python functions and can be easily changed/added
 without needing to restart the application
 
 ### Controllers and Servers
+
+#### Controllers
+Controllers refer to the class that is within the controller file.
+"Controller" refers to the class that acts as an intermediary between the game server and the Server Server itself 
+by implementing functions defined by the base controller it inherits from.
+It is in charge of defining commands that can be used for itself and creating instances of servers.
+Think of this as a factory that creates the servers
+#### Servers
+Servers refer to an instance of the controller class.
+This is the wrapper for the game server itself and handles the IO between the Server Server and the game server
+
+Servers can be created and by using the create_server and command. 
+This command take in the Controller being used to create the server, the name of the new server and 
+any arguments to be passed to the controller depending in the controller itself
+
+    ->create_server Controller Server_Name *args
+
+Servers can be removed with a similar command:
+
+    -> remove_server Controller Server
+
+Servers can be started and stopped with the "start" and "stop" commands:
+
+    ->start Controller Server
+    ->stop Controller Server
 
 ### Scope
 What commands are available to the user depend on the users scope.
