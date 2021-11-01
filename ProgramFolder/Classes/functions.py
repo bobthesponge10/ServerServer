@@ -7,8 +7,10 @@ from importlib import util, reload
 def install_requirements(requirements):
     try:
         if system() == "Linux":
+            check_call(["sudo", executable, "-m", "pip", "install", "-q", "--upgrade", "pip"])
             check_call(["sudo", executable, "-m", "pip", "install", "-q", "-r", requirements])
         else:
+            check_call([executable, "-m", "pip", "install", "-q", "--upgrade", "pip"])
             check_call([executable, "-m", "pip", "install", "-q", "-r", requirements])
     except CalledProcessError:
         pass

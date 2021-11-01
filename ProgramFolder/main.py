@@ -7,7 +7,7 @@ from Classes import functions
 from Classes import PortHandler
 from json import dumps, loads, JSONDecodeError
 from time import sleep
-from os import chdir, getcwd
+from os import chdir
 from os import path as ospath
 from sys import version
 from socket import gethostbyname, gethostname
@@ -25,8 +25,7 @@ from socket import gethostbyname, gethostname
 # commands/documentation
 # typing
 # execute commands from in game
-# permission tp view server output
-# obscure text when typing password
+# permission to view server output
 # headless mode
 # organize client application (its very messy and bad right now)
 
@@ -52,7 +51,8 @@ def main():
         "serverDir": "ServerFolder",
         "envDir": "ProgramFolder/Env",
         "socketPort": 10000,
-        "ip": "127.0.0.1"
+        "ip": "127.0.0.1",
+        "headless": False
     }
 
     # </editor-fold>

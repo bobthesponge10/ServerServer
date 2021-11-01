@@ -44,6 +44,21 @@ class ConsoleUI(Thread):
         self._select_pos = -1
 
         self.obscure_input = False
+        self.obscure_char = "*"
+
+    def set_obscure(self, obscure, character="*"):
+        update_needed = False
+
+        if obscure != self.obscure_input:
+            update_needed = True
+        if character != self.obscure_char:
+            update_needed = True
+
+        self.obscure_input = obscure
+        self.obscure_char = character
+
+        if update_needed:
+            self.hard_update_input()
 
     def get_input(self) -> List[str]:
         """
@@ -294,11 +309,19 @@ class ConsoleUI(Thread):
         if self._select_pos != -1:
             a = min((self._select_pos, self._input_cursor))
             b = max((self._select_pos, self._input_cursor))
-            self._Input.addstr(self._input_prefix + self._input_text[:a])
-            self._Input.addstr(self._input_text[a:b], curses.A_REVERSE)
-            self._Input.addstr(self._input_text[b:])
+            if self.obscure_input:
+                self._Input.addstr(self._input_prefix + len(self._input_text[:a]) * self.obscure_char)
+                self._Input.addstr(len(self._input_text[a:b]) * self.obscure_char, curses.A_REVERSE)
+                self._Input.addstr(len(self._input_text[b:]) * self.obscure_char)
+            else:
+                self._Input.addstr(self._input_prefix + self._input_text[:a])
+                self._Input.addstr(self._input_text[a:b], curses.A_REVERSE)
+                self._Input.addstr(self._input_text[b:])
         else:
-            self._Input.addstr(self._input_prefix + self._input_text)
+            if self.obscure_input:
+                self._Input.addstr(self._input_prefix + len(self._input_text) * self.obscure_char)
+            else:
+                self._Input.addstr(self._input_prefix + self._input_text)
         self._refresh(con=False)
 
     def _refresh(self, con=True, inp=True):
@@ -331,7 +354,10 @@ class ConsoleUI(Thread):
         else:
             new_segment = text + self._input_text[self._input_cursor:]
             self._input_text = self._input_text[:self._input_cursor] + new_segment
-            self._Input.addstr(new_segment)
+            if self.obscure_input:
+                self._Input.addstr(self.obscure_char)
+            else:
+                self._Input.addstr(new_segment)
             self._input_cursor += len(text)
 
             self._refresh(con=False)
@@ -391,11 +417,17 @@ class ConsoleUI(Thread):
     def _copy(self):
         if self._select_pos == -1:
             if self._input_cursor < len(self._input_text):
-                copy(self._input_text[self._input_cursor])
+                if self.obscure_input:
+                    copy(len(self._input_text[self._input_cursor]) * self.obscure_char)
+                else:
+                    copy(self._input_text[self._input_cursor])
         else:
             a = min((self._select_pos, self._input_cursor))
             b = max((self._select_pos, self._input_cursor))
-            copy(self._input_text[a:b])
+            if self.obscure_input:
+                copy(len(self._input_text[a:b]) * self.obscure_char)
+            else:
+                copy(self._input_text[a:b])
 
     def _up(self):
         if len(self._input_history) == 0:
@@ -409,7 +441,10 @@ class ConsoleUI(Thread):
         self._input_cursor = len(self._input_text)
         self._Input.move(0, 0)
         self._Input.clrtoeol()
-        self._Input.addstr(0, 0, self._input_prefix + self._input_text)
+        if self.obscure_input:
+            self._Input.addstr(0, 0, self._input_prefix + len(self._input_text) * self.obscure_char)
+        else:
+            self._Input.addstr(0, 0, self._input_prefix + len(self._input_text) * self.obscure_char)
         self._input_offset = 0
         self._select_pos = -1
         self._refresh(con=False)
@@ -426,7 +461,10 @@ class ConsoleUI(Thread):
         self._input_cursor = len(self._input_text)
         self._Input.move(0, 0)
         self._Input.clrtoeol()
-        self._Input.addstr(0, 0, self._input_prefix + self._input_text)
+        if self.obscure_input:
+            self._Input.addstr(0, 0, self._input_prefix + len(self._input_text) * self.obscure_char)
+        else:
+            self._Input.addstr(0, 0, self._input_prefix + len(self._input_text) * self.obscure_char)
         self._input_offset = 0
         self._select_pos = -1
         self._refresh(con=False)
@@ -453,9 +491,15 @@ class ConsoleUI(Thread):
         if len(self._input_text) == 0:
             return
         if self._select_pos > self._input_cursor:
-            self._Input.addstr(self._input_text[self._input_cursor], curses.A_REVERSE)
+            if self.obscure_input:
+                self._Input.addstr(len(self._input_text[self._input_cursor]) * self.obscure_char, curses.A_REVERSE)
+            else:
+                self._Input.addstr(self._input_text[self._input_cursor], curses.A_REVERSE)
         else:
-            self._Input.addstr(self._input_text[self._input_cursor])
+            if self.obscure_input:
+                self._Input.addstr(len(self._input_text[self._input_cursor]) * self.obscure_char)
+            else:
+                self._Input.addstr(self._input_text[self._input_cursor])
         self._refresh()
 
     def _shift_right(self):
@@ -465,9 +509,15 @@ class ConsoleUI(Thread):
             self._select_pos = self._input_cursor
         self._set_cursor_pos()
         if self._select_pos <= self._input_cursor:
-            self._Input.addstr(self._input_text[self._input_cursor], curses.A_REVERSE)
+            if self.obscure_input:
+                self._Input.addstr(len(self._input_text[self._input_cursor]) * self.obscure_char, curses.A_REVERSE)
+            else:
+                self._Input.addstr(self._input_text[self._input_cursor], curses.A_REVERSE)
         else:
-            self._Input.addstr(self._input_text[self._input_cursor])
+            if self.obscure_input:
+                self._Input.addstr(len(self._input_text[self._input_cursor]) * self.obscure_char)
+            else:
+                self._Input.addstr(self._input_text[self._input_cursor])
         self._cursor_right(True)
         self._refresh()
 

@@ -8,16 +8,19 @@ import json
 def change_password(console_, client_, algorithm):
     salt = UserData.generate_random_string()
     alg = algorithm
+    console_.set_obscure(True)
     console_.update_prefix("Set new password: ")
     running = True
     while running:
         inp = console_.get_input()
         for i in inp:
             if len(i) > 0:
+                console_.set_obscure(False)
                 password = i
                 hash_ = UserData.generate_hash(salt + password, alg)
                 client_.send_packet({"type": "change_password", "salt": salt, "hash": hash_, "alg": alg})
                 running = False
+    console_.set_obscure(False)
     console_.update_prefix("->")
     console_.clear_input_history()
 
@@ -49,7 +52,7 @@ port = config.get("port", port)
 valid_address = True
 if port <= 0 or port > 65535:
     valid_address = False
-elif len(ip.split("."))!=4:
+elif len(ip.split(".")) != 4:
     valid_address = False
 
 console = ConsoleUI()
@@ -95,6 +98,7 @@ while not logged_in:
             login_state = 1
         elif login_state == 2:
             password = i
+            console.set_obscure(False)
             console.update_prefix("Waiting. . .")
             console.clear_input_history()
             hash_ = UserData.generate_hash(salt + password, alg)
@@ -105,6 +109,7 @@ while not logged_in:
             salt = packet.get("salt")
             alg = packet.get("alg")
             reset_password = packet.get("reset_password")
+            console.set_obscure(True)
             if not reset_password:
                 console.update_prefix("Password: ")
             else:

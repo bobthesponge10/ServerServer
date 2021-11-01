@@ -404,7 +404,7 @@ class ControllerManager:
             if len(users) > 0:
                 handle.print(f"{len(users)} total user(s) over {len(users_dup)} connection(s)\n"+"\n".join(users))
             else:
-                handle.print("No users")
+                handle.print("No users online")
             return True
 
         @cls.add_command(["loadcontrollers", "loadnewcontrollers", "newcontrollers"],
