@@ -48,21 +48,40 @@ The first way is to specify the scope in front of the command.
 The scope can be the scope of a Controller or it can be the scope of a Server that is a member
 of a Controller
     
-    /Controller/Server:command
-    or
-    /Controller:command
+    ->/Controller/Server:command
+    ->/Controller:command
     
 The second way to specify the scope of a command is to focus onto a specific scope.
 When focused on a scope, every command entered is entered within that scope and any output from 
 something not in that scope is not displayed. This can be done to focus on a Controller or just a specific server.
     
-    focus Controller
-    or
-    focus Controller Servers
+    ->focus Controller
+    ->focus Controller Servers
 To un-focus back to the base scope just use the "unfocus" command.
 
 ### Filtering
 Filtering is similar to focusing on a scope because it limits the output of servers to the user.
-Filtering can be used 
+Filtering can be used whitelist or blacklist certain Servers/Controllers.
+Filtering can be enables and disabled as follows:
+
+    ->fiter on
+    ->filter off
+To set how the filter effects a Controller/Server that is not specified within the filter use the "default" argument as follows:
+    
+    ->filter default on
+    ->filter default off
+To add an entry to the filter use the "allow" or "disallow" arguments. Entries can be created for a Controller or a Server.
+If an entry exists for both a Controller and a specific Server. The entry corresponding to the server will be used.
+    
+    //Allow entry
+    ->filter allow Controller
+    ->filter allow Controller Server
+    
+    //Disallow entry
+    ->filter disallow Controller
+    ->filter disallow Controller Server
+Other arguments for the filter command include
+ - view: lists all entries in the filter
+ - reset: removes all entries in the filter
 
 ## Command List
