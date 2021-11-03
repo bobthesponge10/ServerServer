@@ -264,6 +264,15 @@ class PortHandler:
         return cls.use_upnp
 
     @classmethod
+    def wipe_ports(cls):
+        if not cls.use_upnp:
+            return
+        cls.update_upnp_ports()
+        for rule in cls.upnp.rules:
+            if rule["NewPortMappingDescription"].startswith("ServerServer"):
+                cls.upnp.delete_port(rule["NewExternalPort"], rule["NewProtocol"])
+
+    @classmethod
     def update_upnp_ports(cls):
         t = time.time()
         if cls.use_upnp and (cls.upnp_update_timestamp == -1 or t >= cls.upnp_update_timestamp + cls.upnp_timeout_time):

@@ -85,6 +85,7 @@ def main():
         config["ip"] = gethostbyname(gethostname())
     PortHandler.set_ip(config["ip"])
     PortHandler.set_use_upnp(config["upnp"])
+    PortHandler.wipe_ports()
 
     new_path = ospath.dirname(ospath.abspath(__file__))
     if not new_path.endswith("ServerServer"):
@@ -213,6 +214,7 @@ def main():
     Manager.save_instances_to_file()
     Console.print("Stopping socket server")
     MainServer.stop()
+    server_port_handler.remove()
 
     while MainServer.running:
         sleep(0.25)
