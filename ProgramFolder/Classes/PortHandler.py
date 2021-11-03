@@ -1,6 +1,6 @@
 import socket
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 import requests
 from xml.dom.minidom import parseString, Document
 import http.client
@@ -158,15 +158,8 @@ class Upnp:
                      {'SOAPAction': '"urn:schemas-upnp-org:service:WANIPConnection:1#AddPortMapping"',
                       'Content-Type': 'text/xml'}
                      )
-
-        # wait for a response
         resp = conn.getresponse()
-
-        # print the response status
-        print(resp.status)
-
-        # print the response body
-        print(resp.read())
+        return resp.status == 200
 
     def delete_port(self, external_port, protocol):
         if not self.path:
@@ -176,7 +169,8 @@ class Upnp:
 
         arguments = [
             ('NewExternalPort', str(external_port)),
-            ('NewProtocol', str(protocol))]
+            ('NewProtocol', str(protocol)),
+            ('NewRemoteHost', "")]
 
         pure_xml = self.generate_xml(arguments, "DeletePortMapping")
 
@@ -189,14 +183,8 @@ class Upnp:
                       'Content-Type': 'text/xml'}
                      )
 
-        # wait for a response
         resp = conn.getresponse()
-
-        # print the response status
-        print(resp.status)
-
-        # print the response body
-        print(resp.read())
+        return resp.status == 200
 
     def get_port_rules(self):
         if not self.path:
@@ -204,6 +192,7 @@ class Upnp:
             if not self.path:
                 return False
         index = 0
+        ports = []
         while True:
             arguments = [('NewPortMappingIndex', str(index))]
 
@@ -218,14 +207,18 @@ class Upnp:
                           'Content-Type': 'text/xml'}
                          )
 
-            # wait for a response
             resp = conn.getresponse()
-
-            # print the response status
-            print(resp.status)
-
-            # print the response body
-            print(resp.read())
             index += 1
             if resp.status != 200:
                 break
+            p = parseString(resp.read())
+
+            port_info = p.getElementsByTagName('u:GetGenericPortMappingEntryResponse')[0]
+
+            data = {}
+
+            for info in port_info.childNodes:
+                data[info.nodeName] = info.data
+
+
+        return ports
