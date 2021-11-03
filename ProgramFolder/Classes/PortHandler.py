@@ -269,5 +269,5 @@ class PortHandler:
         if cls.use_upnp and (cls.upnp_update_timestamp == -1 or t >= cls.upnp_update_timestamp + cls.upnp_timeout_time):
             cls.upnp_update_timestamp = t
             cls.upnp.get_port_rules()
-            cls.upnp_ports = [i["NewInternalPort"] for i in cls.upnp.rules] + \
-                             [i["NewExternalPort"] for i in cls.upnp.rules]
+            cls.upnp_ports = [int(i["NewInternalPort"]) for i in cls.upnp.rules] + \
+                             [int(i["NewExternalPort"]) for i in cls.upnp.rules]

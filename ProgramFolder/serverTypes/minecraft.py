@@ -41,7 +41,7 @@ class Controller(BaseController):
             self.world_file = self.data.get("world_file", self.world_file)
             self.version = self.data.get("version", self.version)
             self.memory_to_use = self.data.get("memory_to_use", self.memory_to_use)
-        self.port = self.port_handler.request_port(self.port)
+        self.port = self.port_handler.request_port(self.port, description=f"{self.name}", TCP=True, UDP=True)
 
         self.set_address(f"{self.port_handler.get_ip()}:{self.port}")
 
@@ -102,6 +102,10 @@ class Controller(BaseController):
         if self.running and self.process:
             self.process.stdin.write(b"stop\n")
             self.process.stdin.flush()
+
+    def shutdown(self):
+        self.stop()
+        self.port_handler.remove()
 
     def setup(self):
         if not self.running:

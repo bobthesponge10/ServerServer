@@ -204,5 +204,8 @@ class BaseController:
     def stop(self):
         raise NotImplemented
 
+    def shutdown(self):
+        raise NotImplemented
+
     def setup(self):
         pass

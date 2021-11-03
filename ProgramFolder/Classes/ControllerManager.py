@@ -880,6 +880,7 @@ class ControllerManager:
         for cont in self.instances:
             for ins in self.instances[cont]:
                 ins.stop()
+                ins.shutdown()
 
         running = True
         while running:
