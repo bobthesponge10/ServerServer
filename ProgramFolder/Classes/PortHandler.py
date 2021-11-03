@@ -61,19 +61,33 @@ class Upnp:
                            f"ST: {self.SSDP_ST}\r\n" + "\r\n"
         self.ssdpRequest = self.ssdpRequest.encode()
 
+        self.url = None
+        self.path = ""
+
+        self.search()
+        self.get_path()
+
     def search(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(30)
         sock.sendto(self.ssdpRequest, (self.SSDP_ADDR, self.SSDP_PORT))
         resp = sock.recv(1000)
+        resp = resp.decode()
 
-        parsed = re.findall(rb'(?P<name>.*?): (?P<value>.*?)\r\n', resp)
+        parsed = re.findall(r'(?P<name>.*?): (?P<value>.*?)\r\n', resp)
+
         location = list(filter(lambda x: x[0].lower() == "location", parsed))
+
         router_path = urlparse(location[0][1])
+        self.url = router_path
+        print(router_path)
 
-        return router_path
-
-    def get_path(self, url):
-        request = requests.get(url)
+    def get_path(self):
+        if not self.url:
+            self.search()
+            if not self.url:
+                return
+        request = requests.get(urlunparse(self.url))
         directory = request.text
 
         dom = parseString(directory)
@@ -85,26 +99,19 @@ class Upnp:
         for service in service_types:
             if service.childNodes[0].data.find('WANIPConnection') > 0:
                 path = service.parentNode.getElementsByTagName('controlURL')[0].childNodes[0].data
-        return path
+        self.path = path
+        print(path)
 
-    def forward_port(self, external_port, protocol, internal_port, internal_client, desc="", lease_duration=""):
+    @staticmethod
+    def generate_xml(arguments, action):
         doc = Document()
         envelope = doc.createElementNS('', 's:Envelope')
         envelope.setAttribute('xmlns:s', 'http://schemas.xmlsoap.org/soap/envelope/')
         envelope.setAttribute('s:encodingStyle', 'http://schemas.xmlsoap.org/soap/encoding/')
 
         body = doc.createElementNS('', 's:Body')
-        fn = doc.createElementNS('', 'u:AddPortMapping')
+        fn = doc.createElementNS('', f'u:{action}')
         fn.setAttribute('xmlns:u', 'urn:schemas-upnp-org:service:WANIPConnection:1')
-
-        arguments = [
-            ('NewExternalPort', str(external_port)),
-            ('NewProtocol', str(protocol)),
-            ('NewInternalPort', str(internal_port)),
-            ('NewInternalClient', str(internal_client)),
-            ('NewEnabled', '1'),
-            ('NewPortMappingDescription', str(desc)),
-            ('NewLeaseDuration', str(lease_duration))]
 
         argument_list = []
 
@@ -124,3 +131,101 @@ class Upnp:
         doc.appendChild(envelope)
 
         pure_xml = doc.toxml()
+        return pure_xml
+
+    def forward_port(self, external_port, protocol, internal_port, internal_client, desc="", lease_duration=0):
+        if not self.path:
+            self.get_path()
+            if not self.path:
+                return False
+
+        arguments = [
+            ('NewExternalPort', str(external_port)),
+            ('NewProtocol', str(protocol)),
+            ('NewInternalPort', str(internal_port)),
+            ('NewInternalClient', str(internal_client)),
+            ('NewEnabled', '1'),
+            ('NewPortMappingDescription', str(desc)),
+            ('NewLeaseDuration', str(lease_duration))]
+
+        pure_xml = self.generate_xml(arguments, "AddPortMapping")
+
+        conn = http.client.HTTPConnection(self.url.hostname, self.url.port)
+
+        conn.request('POST',
+                     self.path,
+                     pure_xml,
+                     {'SOAPAction': '"urn:schemas-upnp-org:service:WANIPConnection:1#AddPortMapping"',
+                      'Content-Type': 'text/xml'}
+                     )
+
+        # wait for a response
+        resp = conn.getresponse()
+
+        # print the response status
+        print(resp.status)
+
+        # print the response body
+        print(resp.read())
+
+    def delete_port(self, external_port, protocol):
+        if not self.path:
+            self.get_path()
+            if not self.path:
+                return False
+
+        arguments = [
+            ('NewExternalPort', str(external_port)),
+            ('NewProtocol', str(protocol))]
+
+        pure_xml = self.generate_xml(arguments, "DeletePortMapping")
+
+        conn = http.client.HTTPConnection(self.url.hostname, self.url.port)
+
+        conn.request('POST',
+                     self.path,
+                     pure_xml,
+                     {'SOAPAction': '"urn:schemas-upnp-org:service:WANIPConnection:1#DeletePortMapping"',
+                      'Content-Type': 'text/xml'}
+                     )
+
+        # wait for a response
+        resp = conn.getresponse()
+
+        # print the response status
+        print(resp.status)
+
+        # print the response body
+        print(resp.read())
+
+    def get_port_rules(self):
+        if not self.path:
+            self.get_path()
+            if not self.path:
+                return False
+        index = 0
+        while True:
+            arguments = [('NewPortMappingIndex', str(index))]
+
+            pure_xml = self.generate_xml(arguments, "GetGenericPortMappingEntry")
+
+            conn = http.client.HTTPConnection(self.url.hostname, self.url.port)
+
+            conn.request('POST',
+                         self.path,
+                         pure_xml,
+                         {'SOAPAction': '"urn:schemas-upnp-org:service:WANIPConnection:1#GetGenericPortMappingEntry"',
+                          'Content-Type': 'text/xml'}
+                         )
+
+            # wait for a response
+            resp = conn.getresponse()
+
+            # print the response status
+            print(resp.status)
+
+            # print the response body
+            print(resp.read())
+            index += 1
+            if resp.status != 200:
+                break

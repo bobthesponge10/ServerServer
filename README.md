@@ -88,7 +88,7 @@ Filtering is similar to focusing on a scope because it limits the output of serv
 Filtering can be used whitelist or blacklist certain Servers/Controllers.
 Filtering can be enables and disabled as follows:
 
-    ->fiter on
+    ->filter on
     ->filter off
 To set how the filter effects a Controller/Server that is not specified within the filter use the "default" argument as follows:
     
