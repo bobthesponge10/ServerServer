@@ -138,7 +138,7 @@ class Controller(BaseController):
             eula = open(ospath.join(self.path, "eula.txt"), "r")
             data = eula.read()
             eula.close()
-            if "eula=true" in data and ospath.isdir(self.world_file):
+            if "eula=true" in data and ospath.isdir(ospath.join(self.path, self.world_file)):
                 chdir(old_dir)
                 return
             self.add_to_queue("Editing eula")

@@ -444,7 +444,7 @@ class ConsoleUI(Thread):
         if self.obscure_input:
             self._Input.addstr(0, 0, self._input_prefix + len(self._input_text) * self.obscure_char)
         else:
-            self._Input.addstr(0, 0, self._input_prefix + len(self._input_text) * self.obscure_char)
+            self._Input.addstr(0, 0, self._input_prefix + self._input_text)
         self._input_offset = 0
         self._select_pos = -1
         self._refresh(con=False)
@@ -464,7 +464,7 @@ class ConsoleUI(Thread):
         if self.obscure_input:
             self._Input.addstr(0, 0, self._input_prefix + len(self._input_text) * self.obscure_char)
         else:
-            self._Input.addstr(0, 0, self._input_prefix + len(self._input_text) * self.obscure_char)
+            self._Input.addstr(0, 0, self._input_prefix + self._input_text)
         self._input_offset = 0
         self._select_pos = -1
         self._refresh(con=False)

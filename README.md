@@ -3,8 +3,6 @@
 The Server Server is an application to create, control, interact, and host multiple game servers 
 from different games all through a single application.
 
-![mine raft](https://i.ytimg.com/vi/Kwwl9jiJ1A4/maxresdefault.jpg)
-
 ## Server Server Guiding Guide
 
 ### Commands
