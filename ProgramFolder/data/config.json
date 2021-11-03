@@ -6,5 +6,6 @@
   "envDir":"ProgramFolder/Env",
   "socketPort": 10000,
   "ip": "",
-  "headless": false
+  "headless": false,
+  "upnp": false
 }

@@ -52,7 +52,8 @@ def main():
         "envDir": "ProgramFolder/Env",
         "socketPort": 10000,
         "ip": "127.0.0.1",
-        "headless": False
+        "headless": False,
+        "upnp": False
     }
 
     # </editor-fold>
@@ -83,6 +84,7 @@ def main():
     if not isinstance(config["ip"], str) or len(config["ip"].split(".")) != 4:
         config["ip"] = gethostbyname(gethostname())
     PortHandler.set_ip(config["ip"])
+    PortHandler.set_use_upnp(config["upnp"])
 
     new_path = ospath.dirname(ospath.abspath(__file__))
     if not new_path.endswith("ServerServer"):

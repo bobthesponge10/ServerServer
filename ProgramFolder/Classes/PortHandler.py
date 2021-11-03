@@ -4,48 +4,7 @@ from urllib.parse import urlparse, urlunparse
 import requests
 from xml.dom.minidom import parseString, Document
 import http.client
-
-
-class PortHandler:
-    all_ports = []
-    ip = ""
-
-    def __init__(self):
-        self.taken_ports = []
-
-    def request_port(self, port, max_number=-1):
-        if max_number == -1 or max_number > 65535:
-            max_number = 65535
-
-        if port not in self.all_ports:
-            self._add_port(port)
-            return port
-
-        else:
-            while True:
-                port += 1
-                if port > max_number:
-                    return -1
-
-                if port not in self.all_ports:
-                    self._add_port(port)
-                    return port
-
-    def _add_port(self, p):
-        self.all_ports.append(p)
-        self.taken_ports.append(p)
-
-    def remove(self):
-        for i in self.taken_ports:
-            self.all_ports.remove(i)
-
-    @classmethod
-    def set_ip(cls, ip):
-        cls.ip = ip
-
-    @classmethod
-    def get_ip(cls):
-        return cls.ip
+import time
 
 
 class Upnp:
@@ -63,15 +22,22 @@ class Upnp:
 
         self.url = None
         self.path = ""
+        self.rules = []
+
+        self.timeout = 5
 
         self.search()
         self.get_path()
 
     def search(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.settimeout(30)
+        sock.settimeout(self.timeout)
         sock.sendto(self.ssdpRequest, (self.SSDP_ADDR, self.SSDP_PORT))
-        resp = sock.recv(1000)
+        try:
+            resp = sock.recv(1000)
+        except socket.timeout:
+            return
+
         resp = resp.decode()
 
         parsed = re.findall(r'(?P<name>.*?): (?P<value>.*?)\r\n', resp)
@@ -80,7 +46,6 @@ class Upnp:
 
         router_path = urlparse(location[0][1])
         self.url = router_path
-        print(router_path)
 
     def get_path(self):
         if not self.url:
@@ -100,7 +65,6 @@ class Upnp:
             if service.childNodes[0].data.find('WANIPConnection') > 0:
                 path = service.parentNode.getElementsByTagName('controlURL')[0].childNodes[0].data
         self.path = path
-        print(path)
 
     @staticmethod
     def generate_xml(arguments, action):
@@ -218,7 +182,92 @@ class Upnp:
             data = {}
 
             for info in port_info.childNodes:
-                data[info.nodeName] = info.data
-
-
+                d = info.firstChild
+                if d:
+                    data[info.nodeName] = d.data
+            ports.append(data)
+        self.rules = ports
         return ports
+
+
+class PortHandler:
+    all_ports = []
+    ip = ""
+    use_upnp = False
+    upnp_update_timestamp = -1
+    upnp_timeout_time = 60
+    upnp_ports = []
+    upnp = Upnp()
+
+    def __init__(self):
+        self.taken_ports = []
+
+    def request_port(self, port, max_number=-1, description="", TCP=False, UDP=False):
+        if max_number == -1 or max_number > 65535:
+            max_number = 65535
+
+        self.update_upnp_ports()
+
+        while True:
+            if port > max_number:
+                return -1
+            if self.check_port_availability(port):
+                if self.use_upnp and (TCP or UDP):
+                    if TCP:
+                        self.upnp.forward_port(port, "TCP", port, self.ip, "ServerServer-" + description)
+                    if UDP:
+                        self.upnp.forward_port(port, "UDP", port, self.ip, "ServerServer-" + description)
+                    self._add_port(port)
+                return port
+
+            port += 1
+
+    def check_port_availability(self, port):
+        if port in self.all_ports or port in self.upnp_ports:
+            return False
+        return True
+
+    def _add_port(self, p):
+        self.all_ports.append(p)
+        self.taken_ports.append(p)
+
+    def remove(self):
+        for i in self.taken_ports:
+            self.remove_port(i)
+
+    def remove_port(self, port):
+        self.update_upnp_ports()
+
+        if port in self.taken_ports:
+            self.taken_ports.remove(port)
+            self.all_ports.remove(port)
+
+            for rule in self.upnp.rules:
+                if int(rule["NewInternalPort"]) == int(rule["NewExternalPort"]) == port and \
+                        rule["NewPortMappingDescription"].startswith("ServerServer"):
+                    self.upnp.delete_port(rule["NewExternalPort"], rule["NewProtocol"])
+
+    @classmethod
+    def set_ip(cls, ip):
+        cls.ip = ip
+
+    @classmethod
+    def get_ip(cls):
+        return cls.ip
+
+    @classmethod
+    def set_use_upnp(cls, use_upnp):
+        cls.use_upnp = use_upnp
+
+    @classmethod
+    def get_use_upnp(cls):
+        return cls.use_upnp
+
+    @classmethod
+    def update_upnp_ports(cls):
+        t = time.time()
+        if cls.use_upnp and (cls.upnp_update_timestamp == -1 or t >= cls.upnp_update_timestamp + cls.upnp_timeout_time):
+            cls.upnp_update_timestamp = t
+            cls.upnp.get_port_rules()
+            cls.upnp_ports = [i["NewInternalPort"] for i in cls.upnp.rules] + \
+                             [i["NewExternalPort"] for i in cls.upnp.rules]
