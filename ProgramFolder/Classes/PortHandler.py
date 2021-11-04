@@ -25,6 +25,7 @@ class Upnp:
         self.rules = []
 
         self.timeout = 5
+        self.attempts = 5
 
         self.search()
         self.get_path()
@@ -36,7 +37,7 @@ class Upnp:
         try:
             resp = sock.recv(1000)
         except socket.timeout:
-            return
+            return False
 
         resp = resp.decode()
 
@@ -47,11 +48,16 @@ class Upnp:
         router_path = urlparse(location[0][1])
         self.url = router_path
 
+        return True
+
     def get_path(self):
         if not self.url:
-            self.search()
+            for i in range(self.attempts):
+                if self.search():
+                    break
             if not self.url:
-                return
+                return False
+
         request = requests.get(urlunparse(self.url))
         directory = request.text
 

@@ -58,6 +58,8 @@ def main():
 
     # </editor-fold>
 
+    print("Loading . . . .")
+
     # <editor-fold desc="Config File Loading">
     try:
         file = open(configFilePath, "r")
