@@ -120,7 +120,7 @@ def main():
 
     server_port_handler = PortHandler()
     MainServer.set_ip(config["ip"])
-    MainServer.set_port(server_port_handler.request_port(config['socketPort']))
+    MainServer.set_port(server_port_handler.request_port(config['socketPort'], description="Controller", TCP=True))
     MainServer.start()
     Console.print(f"Hosted socket server at {MainServer.get_ip()}:{MainServer.get_port()}")
 
