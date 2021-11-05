@@ -124,6 +124,7 @@ class Upnp:
             for i in range(self.attempts):
                 if self.search():
                     break
+                time.sleep(0.5)
             if not self.url:
                 self.connected = False
                 return False
@@ -319,6 +320,7 @@ class PortHandler:
                 forwarded = True
         routed = False
         name = ""
+        srv = False
         if forwarded and self.use_cloudflare and self.cloudflare.get_connected() and subdomain_name:
             name = f"{subdomain_name}.{self.cloudflare.get_domain()}"
             base_domain = f"{self.cloudflare.get_base_domain()}.{self.cloudflare.get_domain()}"
@@ -333,6 +335,7 @@ class PortHandler:
                                   "port": str(port),
                                   "target": base_domain}}
                     routed = routed or self.cloudflare.ensure_dns_record(r)
+                    srv = srv or routed
                 if UDP and not TCP:
                     r = {"type": "SRV", "name": f"_{srv_service}._udp.{name}", "content": f"0\\{port}\\tt{base_domain}",
                          "data": {"service": f"_{srv_service}",
@@ -343,6 +346,7 @@ class PortHandler:
                                   "port": str(port),
                                   "target": base_domain}}
                     routed = routed or self.cloudflare.ensure_dns_record(r)
+                    srv = srv or routed
             else:
                 routed = self.cloudflare.ensure_dns_record({"type": "CNAME", "name": name, "content": base_domain})
 
@@ -350,7 +354,8 @@ class PortHandler:
              "forwarded": forwarded,
              "address": f"{self.public_ip}:{port}",
              "routed": routed,
-             "domain": name}
+             "domain": name,
+             "srv": srv}
 
         self.all_ports.append(p)
         self.taken_ports.append(p)
@@ -379,6 +384,8 @@ class PortHandler:
                 elif not p.get("routed"):
                     return f"{self.public_ip}:{port}"
                 else:
+                    if p.get("srv"):
+                        return f"{p.get('domain')}"
                     return f"{p.get('domain')}:{port}"
         return ""
 
@@ -414,14 +421,16 @@ class PortHandler:
         for rule in cls.upnp.rules:
             if rule["NewPortMappingDescription"].startswith("ServerServer"):
                 cls.upnp.delete_port(rule["NewExternalPort"], rule["NewProtocol"])
+        cls.update_upnp_ports(force=True)
 
     @classmethod
-    def update_upnp_ports(cls):
+    def update_upnp_ports(cls, force=False):
         t = time.time()
         if not cls.upnp.get_connected():
             cls.upnp_update_timestamp = t
             return
-        if cls.use_upnp and (cls.upnp_update_timestamp == -1 or t >= cls.upnp_update_timestamp + cls.upnp_timeout_time):
+        if cls.use_upnp and (force or (cls.upnp_update_timestamp == -1 or
+                                       t >= cls.upnp_update_timestamp + cls.upnp_timeout_time)):
             cls.upnp_update_timestamp = t
             cls.upnp.get_port_rules()
             cls.upnp_ports = [int(i["NewInternalPort"]) for i in cls.upnp.rules] + \

@@ -14,8 +14,8 @@ from socket import gethostbyname, gethostname
 
 # STUFF TO DO
 # server status command
-# srv records
 # headless mode
+# address not include port if srv
 
 # LIKE TO DO
 # something with logging
@@ -63,7 +63,6 @@ def main():
     }
 
     # </editor-fold>
-
 
     # <editor-fold desc="Config File Loading">
     try:
