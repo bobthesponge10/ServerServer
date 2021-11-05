@@ -324,15 +324,25 @@ class PortHandler:
             base_domain = f"{self.cloudflare.get_base_domain()}.{self.cloudflare.get_domain()}"
             if srv_service:
                 if TCP:
-                    routed = routed or \
-                             self.cloudflare.ensure_dns_record({"type": "SRV",
-                                                                "name": f"_{srv_service}._tcp.{name}",
-                                                                "content": f"0\\{port}\\tt{base_domain}"})
+                    r = {"type": "SRV", "name": f"_{srv_service}._tcp.{name}", "content": f"0\\{port}\\tt{base_domain}",
+                         "data": {"service": f"_{srv_service}",
+                                  "proto": "_tcp",
+                                  "name": subdomain_name,
+                                  "priority": "0",
+                                  "weight": "0",
+                                  "port": str(port),
+                                  "target": base_domain}}
+                    routed = routed or self.cloudflare.ensure_dns_record(r)
                 if UDP and not TCP:
-                    routed = routed or \
-                             self.cloudflare.ensure_dns_record({"type": "SRV",
-                                                                "name": f"_{srv_service}._udp.{name}",
-                                                                "content": f"0\\{port}\\tt{base_domain}"})
+                    r = {"type": "SRV", "name": f"_{srv_service}._udp.{name}", "content": f"0\\{port}\\tt{base_domain}",
+                         "data": {"service": f"_{srv_service}",
+                                  "proto": "_udp",
+                                  "name": subdomain_name,
+                                  "priority": "0",
+                                  "weight": "0",
+                                  "port": str(port),
+                                  "target": base_domain}}
+                    routed = routed or self.cloudflare.ensure_dns_record(r)
             else:
                 routed = self.cloudflare.ensure_dns_record({"type": "CNAME", "name": name, "content": base_domain})
 
