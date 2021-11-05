@@ -42,7 +42,8 @@ class Controller(BaseController):
             self.version = self.data.get("version", self.version)
             self.memory_to_use = self.data.get("memory_to_use", self.memory_to_use)
         self.port = self.port_handler.request_port(self.port, description=f"{self.name}",
-                                                   TCP=True, UDP=True, subdomain_name=self.name)
+                                                   TCP=True, UDP=True, subdomain_name=self.name,
+                                                   srv_service="minecraft")
 
         self.set_address(f"{self.port_handler.get_connection_to_port(self.port)}")
 
