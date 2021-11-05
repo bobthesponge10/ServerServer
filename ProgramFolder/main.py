@@ -6,7 +6,7 @@ from Classes import UserHandle
 from Classes import functions
 from Classes import PortHandler
 from json import dumps, loads, JSONDecodeError
-from time import sleep
+from time import sleep, time
 from os import chdir
 from os import path as ospath
 from sys import version
@@ -14,6 +14,7 @@ from socket import gethostbyname, gethostname
 
 # STUFF TO DO
 # server status command
+# srv records
 
 # LIKE TO DO
 # something with logging
@@ -54,7 +55,11 @@ def main():
         "socketPort": 10000,
         "ip": "127.0.0.1",
         "headless": False,
-        "upnp": False
+        "upnp": False,
+        "cloudflare": False,
+        "cloudflareEmail": "",
+        "cloudflareApiKey": "",
+        "cloudflareDomain": ""
     }
 
     # </editor-fold>
@@ -85,8 +90,12 @@ def main():
 
     if not isinstance(config["ip"], str) or len(config["ip"].split(".")) != 4:
         config["ip"] = gethostbyname(gethostname())
+    PortHandler.get_public_ip()
     PortHandler.set_ip(config["ip"])
     PortHandler.set_use_upnp(config["upnp"])
+    PortHandler.set_use_cloudflare(config["cloudflare"])
+    PortHandler.initialize_cloudflare(config["cloudflareEmail"], config["cloudflareApiKey"],
+                                      config["cloudflareDomain"], "serverserver")
     PortHandler.wipe_ports()
 
     new_path = ospath.dirname(ospath.abspath(__file__))
@@ -124,6 +133,7 @@ def main():
     MainServer.start()
     Console.print(f"Hosted socket server at {MainServer.get_ip()}:{MainServer.get_port()}")
     Console.print(f"UPNP: " + ("Working" if PortHandler.upnp.get_connected() else "Disconnected"))
+    Console.print(f"CloudFlare: " + ("Working" if PortHandler.cloudflare.get_connected() else "Disconnected"))
 
     ServerHandle = UserHandle(Console, UserInfo, server=True)
     user_handles.append(ServerHandle)
@@ -219,12 +229,17 @@ def main():
     MainServer.stop()
     server_port_handler.remove()
 
+    start_time = time()
+
     while MainServer.running:
         sleep(0.25)
+        if start_time + 30 < time():
+            break
 
     Console.print("Goodbye")
     sleep(0.5)
     Console.stop()
+    exit()
 
 
 if __name__ == "__main__":

@@ -7,5 +7,9 @@
   "socketPort": 10000,
   "ip": "",
   "headless": false,
-  "upnp": false
+  "upnp": false,
+  "cloudflare": false,
+  "cloudflareEmail": "",
+  "cloudflareApiKey": "",
+  "cloudflareDomain": ""
 }

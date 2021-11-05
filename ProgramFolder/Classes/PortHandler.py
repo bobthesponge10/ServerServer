@@ -5,6 +5,73 @@ import requests
 from xml.dom.minidom import parseString, Document
 import http.client
 import time
+import CloudFlare
+
+
+class CloudflareWrapper:
+    def __init__(self):
+        self.email = ""
+        self.api_key = ""
+        self.domain = ""
+        self.baseDomain = ""
+
+        self.cf = None
+
+        self.connected = False
+        self.attempting = False
+
+    def ensure_dns_record(self, record):
+        if not self.connected and not self.attempting:
+            return False
+        zone_info = self.cf.zones.get(params={'name': self.domain})[0]
+        zone_id = zone_info.get("id")
+
+        dns_records = self.cf.zones.dns_records.get(zone_id)
+
+        for r in dns_records:
+            if r.get("type") == record.get("type") and r.get("name") == record.get("name").lower() and \
+                    r.get("content") == record.get("content"):
+                return True
+        for r in dns_records:
+            if r.get("name") == record.get("name").lower():
+                self.cf.zones.dns_records.delete(zone_id, r.get("id"))
+                break
+
+        self.cf.zones.dns_records.post(zone_id, data=record)
+        return True
+
+    def setup(self, email, api_key, domain, base_domain, public_ip):
+        self.email = email
+        self.api_key = api_key
+        self.domain = domain
+        self.baseDomain = base_domain
+
+        try:
+            self.attempting = True
+            self.cf = CloudFlare.CloudFlare(email=self.email, token=self.api_key)
+            if not self.ensure_dns_record({"name": base_domain, "type": "A", "content": public_ip}):
+                self.cf = None
+                self.connected = False
+                self.attempting = False
+                return False
+        except CloudFlare.exceptions.CloudFlareAPIError as e:
+            print(e)
+            self.cf = None
+            self.connected = False
+            self.attempting = False
+            return False
+
+        self.connected = True
+        return True
+
+    def get_domain(self):
+        return self.domain
+
+    def get_base_domain(self):
+        return self.baseDomain
+
+    def get_connected(self):
+        return self.connected
 
 
 class Upnp:
@@ -203,16 +270,22 @@ class Upnp:
 class PortHandler:
     all_ports = []
     ip = ""
+
     use_upnp = False
+    use_cloudflare = False
+    cloudflare = CloudflareWrapper()
+    upnp = Upnp()
+
     upnp_update_timestamp = -1
     upnp_timeout_time = 60
     upnp_ports = []
-    upnp = Upnp()
+
+    public_ip = ""
 
     def __init__(self):
         self.taken_ports = []
 
-    def request_port(self, port, max_number=-1, description="", TCP=False, UDP=False):
+    def request_port(self, port, max_number=-1, description="", TCP=False, UDP=False, subdomain_name=""):
         if max_number == -1 or max_number > 65535:
             max_number = 65535
 
@@ -222,22 +295,39 @@ class PortHandler:
             if port > max_number:
                 return -1
             if self.check_port_availability(port):
-                if self.use_upnp and (TCP or UDP):
-                    if TCP:
-                        self.upnp.forward_port(port, "TCP", port, self.ip, "ServerServer-" + description)
-                    if UDP:
-                        self.upnp.forward_port(port, "UDP", port, self.ip, "ServerServer-" + description)
-                    self._add_port(port)
+                self._add_port(port, description=description, TCP=TCP, UDP=UDP, subdomain_name=subdomain_name)
                 return port
-
             port += 1
 
     def check_port_availability(self, port):
-        if port in self.all_ports or port in self.upnp_ports:
+        if port in [i.get("port") for i in self.all_ports]:
+            return False
+        if port in self.upnp_ports:
             return False
         return True
 
-    def _add_port(self, p):
+    def _add_port(self, port, description="", TCP=False, UDP=False, subdomain_name=""):
+        forwarded = False
+        if self.use_upnp and self.upnp.get_connected() and (TCP or UDP):
+            if TCP:
+                self.upnp.forward_port(port, "TCP", port, self.ip, "ServerServer-" + description)
+                forwarded = True
+            if UDP:
+                self.upnp.forward_port(port, "UDP", port, self.ip, "ServerServer-" + description)
+                forwarded = True
+        routed = False
+        name = ""
+        if forwarded and self.use_cloudflare and self.cloudflare.get_connected() and subdomain_name:
+            name = f"{subdomain_name}.{self.cloudflare.get_domain()}"
+            base_domain = f"{self.cloudflare.get_base_domain()}.{self.cloudflare.get_domain()}"
+            routed = self.cloudflare.ensure_dns_record({"type": "CNAME", "name": name, "content": base_domain})
+
+        p = {"port": port,
+             "forwarded": forwarded,
+             "address": f"{self.public_ip}:{port}",
+             "routed": routed,
+             "domain": name}
+
         self.all_ports.append(p)
         self.taken_ports.append(p)
 
@@ -257,6 +347,17 @@ class PortHandler:
                         rule["NewPortMappingDescription"].startswith("ServerServer"):
                     self.upnp.delete_port(rule["NewExternalPort"], rule["NewProtocol"])
 
+    def get_connection_to_port(self, port):
+        for p in self.all_ports:
+            if p.get("port") == port:
+                if not p.get("forwarded"):
+                    return f"{self.ip}:{port}"
+                elif not p.get("routed"):
+                    return f"{self.public_ip}:{port}"
+                else:
+                    return f"{p.get('name')}:{port}"
+        return ""
+
     @classmethod
     def set_ip(cls, ip):
         cls.ip = ip
@@ -271,10 +372,17 @@ class PortHandler:
         if use_upnp and not cls.upnp.get_connected():
             cls.upnp.get_path()
 
-
     @classmethod
     def get_use_upnp(cls):
         return cls.use_upnp
+
+    @classmethod
+    def set_use_cloudflare(cls, use_cloudflare):
+        cls.use_cloudflare = use_cloudflare
+
+    @classmethod
+    def get_use_cloudflare(cls):
+        return cls.use_cloudflare
 
     @classmethod
     def wipe_ports(cls):
@@ -293,3 +401,15 @@ class PortHandler:
             cls.upnp.get_port_rules()
             cls.upnp_ports = [int(i["NewInternalPort"]) for i in cls.upnp.rules] + \
                              [int(i["NewExternalPort"]) for i in cls.upnp.rules]
+
+    @classmethod
+    def get_public_ip(cls):
+        if not cls.public_ip:
+            cls.public_ip = requests.get("https://api.ipify.org/").text
+
+    @classmethod
+    def initialize_cloudflare(cls, email, api_key, domain, base_domain):
+        cls.get_public_ip()
+        if not cls.use_cloudflare:
+            return
+        cls.cloudflare.setup(email, api_key, domain, base_domain, cls.public_ip)

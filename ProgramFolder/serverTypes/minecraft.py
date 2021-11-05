@@ -41,9 +41,10 @@ class Controller(BaseController):
             self.world_file = self.data.get("world_file", self.world_file)
             self.version = self.data.get("version", self.version)
             self.memory_to_use = self.data.get("memory_to_use", self.memory_to_use)
-        self.port = self.port_handler.request_port(self.port, description=f"{self.name}", TCP=True, UDP=True)
+        self.port = self.port_handler.request_port(self.port, description=f"{self.name}",
+                                                   TCP=True, UDP=True, subdomain_name=self.name)
 
-        self.set_address(f"{self.port_handler.get_ip()}:{self.port}")
+        self.set_address(f"{self.port_handler.get_connection_to_port(self.port)}")
 
         self.property_file_name = "server.properties"
 
@@ -73,7 +74,7 @@ class Controller(BaseController):
         java_path = self.get_java_path()
         old_dir = ospath.abspath(getcwd())
         chdir(self.path)
-        self.add_to_queue(f"Starting server at port: {self.port}")
+        self.add_to_queue(f"Starting server at {self.get_address()}")
         self.process = Popen(
             f"{java_path} -Xmx{self.memory_to_use}M -Xms{self.memory_to_use}M -jar {self.jar_name} nogui",
             stdin=PIPE, stdout=PIPE, stderr=PIPE)
