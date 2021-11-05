@@ -433,10 +433,3 @@ class PortHandler:
         if not cls.use_cloudflare or not cls.upnp.get_connected():
             return
         cls.cloudflare.setup(email, api_key, domain, base_domain, cls.public_ip)
-
-cf = CloudFlare.CloudFlare(email="kingofallcreepers@gmail.com", token="a18437df7f5e1ea85a311ebc69c07b0361eef")
-zone = cf.zones.get(params={"name": "bobthesponge10.com"})[0]
-
-records = cf.zones.dns_records.get(zone["id"])
-for r in records:
-    print(r)
