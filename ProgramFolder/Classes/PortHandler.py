@@ -27,8 +27,10 @@ class Upnp:
         self.timeout = 5
         self.attempts = 5
 
-        self.search()
-        self.get_path()
+        self.connected = False
+
+    def get_connected(self):
+        return self.connected
 
     def search(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -37,6 +39,7 @@ class Upnp:
         try:
             resp = sock.recv(1000)
         except socket.timeout:
+            self.connected = False
             return False
 
         resp = resp.decode()
@@ -56,6 +59,7 @@ class Upnp:
                 if self.search():
                     break
             if not self.url:
+                self.connected = False
                 return False
 
         request = requests.get(urlunparse(self.url))
@@ -264,6 +268,9 @@ class PortHandler:
     @classmethod
     def set_use_upnp(cls, use_upnp):
         cls.use_upnp = use_upnp
+        if use_upnp and not cls.upnp.get_connected():
+            cls.upnp.get_path()
+
 
     @classmethod
     def get_use_upnp(cls):

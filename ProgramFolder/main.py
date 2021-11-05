@@ -13,6 +13,7 @@ from sys import version
 from socket import gethostbyname, gethostname
 
 # STUFF TO DO
+# server status command
 
 # LIKE TO DO
 # something with logging
@@ -58,7 +59,6 @@ def main():
 
     # </editor-fold>
 
-    print("Loading . . . .")
 
     # <editor-fold desc="Config File Loading">
     try:
@@ -123,6 +123,7 @@ def main():
     MainServer.set_port(server_port_handler.request_port(config['socketPort'], description="Controller", TCP=True))
     MainServer.start()
     Console.print(f"Hosted socket server at {MainServer.get_ip()}:{MainServer.get_port()}")
+    Console.print(f"UPNP: " + ("Working" if PortHandler.upnp.get_connected() else "Disconnected"))
 
     ServerHandle = UserHandle(Console, UserInfo, server=True)
     user_handles.append(ServerHandle)
