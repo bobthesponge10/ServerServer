@@ -13,7 +13,7 @@ class CloudflareWrapper:
         self.email = ""
         self.api_key = ""
         self.domain = ""
-        self.baseDomain = ""
+        self.base_domain = ""
 
         self.cf = None
 
@@ -44,18 +44,17 @@ class CloudflareWrapper:
         self.email = email
         self.api_key = api_key
         self.domain = domain
-        self.baseDomain = base_domain
+        self.base_domain = base_domain
 
         try:
             self.attempting = True
             self.cf = CloudFlare.CloudFlare(email=self.email, token=self.api_key)
-            if not self.ensure_dns_record({"name": base_domain, "type": "A", "content": public_ip}):
+            if not self.ensure_dns_record({"name": f"{self.base_domain}.{self.domain}", "type": "A", "content": public_ip}):
                 self.cf = None
                 self.connected = False
                 self.attempting = False
                 return False
         except CloudFlare.exceptions.CloudFlareAPIError as e:
-            print(e)
             self.cf = None
             self.connected = False
             self.attempting = False
@@ -68,7 +67,7 @@ class CloudflareWrapper:
         return self.domain
 
     def get_base_domain(self):
-        return self.baseDomain
+        return self.base_domain
 
     def get_connected(self):
         return self.connected
