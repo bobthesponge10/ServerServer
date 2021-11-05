@@ -285,7 +285,8 @@ class PortHandler:
     def __init__(self):
         self.taken_ports = []
 
-    def request_port(self, port, max_number=-1, description="", TCP=False, UDP=False, subdomain_name=""):
+    def request_port(self, port, max_number=-1, description="",
+                     TCP=False, UDP=False, subdomain_name="", srv_service=""):
         if max_number == -1 or max_number > 65535:
             max_number = 65535
 
@@ -295,7 +296,8 @@ class PortHandler:
             if port > max_number:
                 return -1
             if self.check_port_availability(port):
-                self._add_port(port, description=description, TCP=TCP, UDP=UDP, subdomain_name=subdomain_name)
+                self._add_port(port, description=description,
+                               TCP=TCP, UDP=UDP, subdomain_name=subdomain_name, srv_service=srv_service)
                 return port
             port += 1
 
@@ -306,7 +308,7 @@ class PortHandler:
             return False
         return True
 
-    def _add_port(self, port, description="", TCP=False, UDP=False, subdomain_name=""):
+    def _add_port(self, port, description="", TCP=False, UDP=False, subdomain_name="", srv_service=""):
         forwarded = False
         if self.use_upnp and self.upnp.get_connected() and (TCP or UDP):
             if TCP:
@@ -320,7 +322,19 @@ class PortHandler:
         if forwarded and self.use_cloudflare and self.cloudflare.get_connected() and subdomain_name:
             name = f"{subdomain_name}.{self.cloudflare.get_domain()}"
             base_domain = f"{self.cloudflare.get_base_domain()}.{self.cloudflare.get_domain()}"
-            routed = self.cloudflare.ensure_dns_record({"type": "CNAME", "name": name, "content": base_domain})
+            if srv_service:
+                if TCP:
+                    routed = routed or \
+                             self.cloudflare.ensure_dns_record({"type": "SRV",
+                                                                "name": f"_{srv_service}._tcp.{name}",
+                                                                "content": f"0\\{port}\\tt{base_domain}"})
+                if UDP and not TCP:
+                    routed = routed or \
+                             self.cloudflare.ensure_dns_record({"type": "SRV",
+                                                                "name": f"_{srv_service}._udp.{name}",
+                                                                "content": f"0\\{port}\\tt{base_domain}"})
+            else:
+                routed = self.cloudflare.ensure_dns_record({"type": "CNAME", "name": name, "content": base_domain})
 
         p = {"port": port,
              "forwarded": forwarded,
@@ -419,3 +433,10 @@ class PortHandler:
         if not cls.use_cloudflare or not cls.upnp.get_connected():
             return
         cls.cloudflare.setup(email, api_key, domain, base_domain, cls.public_ip)
+
+cf = CloudFlare.CloudFlare(email="kingofallcreepers@gmail.com", token="a18437df7f5e1ea85a311ebc69c07b0361eef")
+zone = cf.zones.get(params={"name": "bobthesponge10.com"})[0]
+
+records = cf.zones.dns_records.get(zone["id"])
+for r in records:
+    print(r)
