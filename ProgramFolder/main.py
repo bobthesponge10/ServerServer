@@ -15,7 +15,9 @@ from socket import gethostbyname, gethostname
 # STUFF TO DO
 # server status command
 # headless mode
-# address not include port if srv
+# prevent subdomain overlap
+# upnp prevent overlap with normal port forwarded ports
+# organize client application (its very messy and bad right now)
 
 # LIKE TO DO
 # something with logging
@@ -29,7 +31,6 @@ from socket import gethostbyname, gethostname
 # typing
 # execute commands from in game
 # permission to view server output
-# organize client application (its very messy and bad right now)
 
 # ---minecraft controller stuff
 # edit Settings

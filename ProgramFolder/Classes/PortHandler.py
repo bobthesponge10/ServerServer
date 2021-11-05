@@ -40,6 +40,21 @@ class CloudflareWrapper:
         self.cf.zones.dns_records.post(zone_id, data=record)
         return True
 
+    def delete_record(self, name, service=""):
+        if not self.connected:
+            return False
+
+        zone_info = self.cf.zones.get(params={'name': self.domain})[0]
+        zone_id = zone_info.get("id")
+
+        dns_records = self.cf.zones.dns_records.get(zone_id)
+        for r in dns_records:
+            n = r.get("name")
+            if (not service and n == name.lower()) or (service and n.startswith(f"_{service}") and n.endswith(name)):
+                self.cf.zones.dns_records.delete(zone_id, r.get("id"))
+                break
+        return True
+
     def setup(self, email, api_key, domain, base_domain, public_ip):
         self.email = email
         self.api_key = api_key
@@ -355,26 +370,34 @@ class PortHandler:
              "address": f"{self.public_ip}:{port}",
              "routed": routed,
              "domain": name,
-             "srv": srv}
+             "srv": srv,
+             "service": srv_service}
 
         self.all_ports.append(p)
         self.taken_ports.append(p)
 
-    def remove(self):
+    def remove(self, delete=False):
         for i in self.taken_ports:
-            self.remove_port(i)
+            self.remove_port(i.get("port"), full_port=i, delete=delete)
 
-    def remove_port(self, port):
+    def remove_port(self, port, full_port=None, delete=False):
         self.update_upnp_ports()
 
-        if port in self.taken_ports:
-            self.taken_ports.remove(port)
-            self.all_ports.remove(port)
+        if not full_port:
+            for p in self.all_ports:
+                if p.get("port") == port:
+                    full_port = p
+
+        if full_port:
+            self.taken_ports.remove(full_port)
+            self.all_ports.remove(full_port)
 
             for rule in self.upnp.rules:
                 if int(rule["NewInternalPort"]) == int(rule["NewExternalPort"]) == port and \
                         rule["NewPortMappingDescription"].startswith("ServerServer"):
                     self.upnp.delete_port(rule["NewExternalPort"], rule["NewProtocol"])
+            if delete and full_port.get("routed"):
+                self.cloudflare.delete_record(full_port.get("domain"), service=full_port.get("service"))
 
     def get_connection_to_port(self, port):
         for p in self.all_ports:

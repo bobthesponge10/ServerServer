@@ -142,7 +142,7 @@ class BaseController:
     def remove(self):
         self.parent_object.objects.remove(self)
         rmtree(self.path)
-        self.port_handler.remove()
+        self.port_handler.remove(delete=True)
 
     def set_parent_object(self, parent_object):
         self.parent_object = parent_object
