@@ -141,6 +141,7 @@ class Upnp:
             if service.childNodes[0].data.find('WANIPConnection') > 0:
                 path = service.parentNode.getElementsByTagName('controlURL')[0].childNodes[0].data
         self.path = path
+        self.connected = True
 
     @staticmethod
     def generate_xml(arguments, action):
@@ -354,7 +355,7 @@ class PortHandler:
                 elif not p.get("routed"):
                     return f"{self.public_ip}:{port}"
                 else:
-                    return f"{p.get('name')}:{port}"
+                    return f"{p.get('domain')}:{port}"
         return ""
 
     @classmethod
@@ -368,8 +369,6 @@ class PortHandler:
     @classmethod
     def set_use_upnp(cls, use_upnp):
         cls.use_upnp = use_upnp
-        if use_upnp and not cls.upnp.get_connected():
-            cls.upnp.get_path()
 
     @classmethod
     def get_use_upnp(cls):
@@ -395,6 +394,9 @@ class PortHandler:
     @classmethod
     def update_upnp_ports(cls):
         t = time.time()
+        if not cls.upnp.get_connected():
+            cls.upnp_update_timestamp = t
+            return
         if cls.use_upnp and (cls.upnp_update_timestamp == -1 or t >= cls.upnp_update_timestamp + cls.upnp_timeout_time):
             cls.upnp_update_timestamp = t
             cls.upnp.get_port_rules()
@@ -407,8 +409,13 @@ class PortHandler:
             cls.public_ip = requests.get("https://api.ipify.org/").text
 
     @classmethod
+    def initialize_upnp(cls):
+        if cls.use_upnp and not cls.upnp.get_connected():
+            cls.upnp.get_path()
+
+    @classmethod
     def initialize_cloudflare(cls, email, api_key, domain, base_domain):
         cls.get_public_ip()
-        if not cls.use_cloudflare:
+        if not cls.use_cloudflare or not cls.upnp.get_connected():
             return
         cls.cloudflare.setup(email, api_key, domain, base_domain, cls.public_ip)

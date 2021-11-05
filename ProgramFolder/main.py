@@ -15,6 +15,7 @@ from socket import gethostbyname, gethostname
 # STUFF TO DO
 # server status command
 # srv records
+# headless mode
 
 # LIKE TO DO
 # something with logging
@@ -28,7 +29,6 @@ from socket import gethostbyname, gethostname
 # typing
 # execute commands from in game
 # permission to view server output
-# headless mode
 # organize client application (its very messy and bad right now)
 
 # ---minecraft controller stuff
@@ -93,6 +93,7 @@ def main():
     PortHandler.get_public_ip()
     PortHandler.set_ip(config["ip"])
     PortHandler.set_use_upnp(config["upnp"])
+    PortHandler.initialize_upnp()
     PortHandler.set_use_cloudflare(config["cloudflare"])
     PortHandler.initialize_cloudflare(config["cloudflareEmail"], config["cloudflareApiKey"],
                                       config["cloudflareDomain"], "serverserver")
