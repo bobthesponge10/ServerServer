@@ -3,6 +3,7 @@
   "serverInfoDir":"serverTypes/",
   "instanceDataFile":"data/controllerInstances.json",
   "serverDir":"../ServerFolder",
+  "pidFile": "data/serverserver.pid",
   "envDir":"Env",
   "socketPort": 10000,
   "ip": "127.0.0.1",

@@ -9,7 +9,7 @@ from json import dumps, loads, JSONDecodeError
 from time import sleep, time
 from sys import version
 from socket import gethostbyname, gethostname
-from os import path as ospath, chdir, getcwd, system
+from os import path as ospath, chdir, getcwd, system, getpid, kill, remove
 from sys import argv, executable
 from platform import system as platSys
 
@@ -17,7 +17,6 @@ from platform import system as platSys
 # prevent subdomain overlap
 # upnp prevent overlap with normal port forwarded ports
 # organize client application (its very messy and bad right now)
-# pid, 1 instance at a time
 
 # LIKE TO DO
 # something with logging
@@ -192,6 +191,18 @@ def main(config):
     exit()
 
 
+def check_pid(pid):
+    """ Check For the existence of a unix pid. """
+    try:
+        kill(int(pid), 0)
+    except OSError:
+        return False
+    except ValueError:
+        return False
+    else:
+        return True
+
+
 if __name__ == "__main__":
 
     chdir(ospath.dirname(ospath.join(argv[0], __file__)))
@@ -204,6 +215,7 @@ if __name__ == "__main__":
         "serverInfoDir": "serverTypes/",
         "instanceDataFile": "data/controllerInstances.json",
         "serverDir": "../ServerFolder",
+        "pidFile": "data/serverserver.pid",
         "envDir": "Env",
         "socketPort": 10000,
         "ip": "127.0.0.1",
@@ -241,22 +253,30 @@ if __name__ == "__main__":
     # </editor-fold>
 
     no_new = len(argv) > 1 and "headless" in argv[1:]
-    file = ospath.join(getcwd(), ospath.basename(__file__))
+    script = ospath.join(getcwd(), ospath.basename(__file__))
     if config["headless"] and not no_new:
         if platSys() == "Windows":
-            system(f"start {executable[:-4]}w.exe {file} headless")
+            system(f"start {executable[:-4]}w.exe {script} headless")
         elif platSys() == "Linux":
-            system(f"nohup {executable} {file} headless &")
+            system(f"nohup {executable} {script} headless &")
         elif platSys() == "Darwin":
-            system(f"{executable} {file} headless &")
+            system(f"{executable} {script} headless &")
 
     else:
         try:
+            if ospath.isfile(config["pidFile"]):
+                with open(config["pidFile"], "r") as file:
+                    if check_pid(file.read()):
+                        exit()
+            with open(config["pidFile"], "w") as file:
+                file.write(str(getpid()))
             main(config)
         except Exception as e:
             c = ConsoleUI()
             c.start()
             c.stop()
-            print(e)
-            input(": ")
             raise e
+        finally:
+            if ospath.isfile(config["pidFile"]):
+                remove(config["pidFile"])
+
