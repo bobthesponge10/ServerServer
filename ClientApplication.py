@@ -46,7 +46,6 @@ except json.JSONDecodeError:
 
 ip = config.get("ip", ip)
 port = config.get("port", port)
-
 # </editor-fold>
 
 valid_address = True

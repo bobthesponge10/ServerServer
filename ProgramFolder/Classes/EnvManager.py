@@ -1,7 +1,7 @@
 from os import path as ospath
 from os import makedirs, remove
 from platform import system
-from requests import get
+from requests import get, exceptions
 from shutil import rmtree, copyfileobj
 from zipfile import ZipFile
 from tarfile import open as open_tar
@@ -46,8 +46,10 @@ class EnvManager:
 
         if not url:
             return False
-
-        data = get(url).content
+        try:
+            data = get(url).content
+        except exceptions.ConnectionError:
+            return False
         file = open(temp_file, "wb")
         file.write(data)
         file.close()

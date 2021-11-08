@@ -5,6 +5,7 @@ from .EnvManager import EnvManager
 from inspect import getfile
 from json import loads, dumps, decoder
 from time import sleep
+from sys import version
 
 
 class ControllerManager:
@@ -94,6 +95,16 @@ class ControllerManager:
                 handle.print(user.id)
                 handle.print(user.obj)
                 handle.print(user.server)
+
+        @cls.add_command(["status"], ignore_chars=ignore, global_function=True,
+                         help_info="Displays some basic info on the status of the server server.")
+        def status(self, handle, *args, **kwargs):
+            handle.print(version)
+            handle.print(f"Loaded {len(handle.user_data.get_users())} user(s) from '{handle.user_data.get_file_path()}'")
+            handle.print(f"Loaded {len(self.get_server_names())} server type(s) from '{self.instances_data_file}'")
+            handle.print(f"Hosted socket server at {self.port_handler.get_connection_to_port(self.socket_server.get_port())}")
+            handle.print(f"UPNP: " + ("Working" if self.port_handler.upnp.get_connected() else "Disconnected"))
+            handle.print(f"CloudFlare: " + ("Working" if self.port_handler.cloudflare.get_connected() else "Disconnected"))
 
         @cls.add_command(["help", "h"], ignore_chars=ignore, global_function=True, default="help",
                          help_info="Use this command to find out how to use a command. Ex: help <command>")
@@ -606,7 +617,7 @@ class ControllerManager:
 
     # </editor-fold>
 
-    def __init__(self, ConsoleObj, handle_list, port_handler, env_path):
+    def __init__(self, ConsoleObj, handle_list, port_handler, env_path, socket_server):
         self.parent_object = type(self)
         self.objects.append(self)
 
@@ -620,6 +631,7 @@ class ControllerManager:
         self.instances = {}     # format {type: [instance1, instance2, ...]}
 
         self.env_manager = EnvManager(env_path)
+        self.socket_server = socket_server
 
         self.handle_list = handle_list
 

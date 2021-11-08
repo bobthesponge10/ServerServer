@@ -1,5 +1,5 @@
 from Classes import BaseController
-from requests import get
+from requests import get, exceptions
 from os import path as ospath
 from os import chdir, getcwd
 from subprocess import Popen, PIPE
@@ -31,6 +31,7 @@ class Controller(BaseController):
         self.memory_to_use = 4096
         self.world_file = "world"
         self.port = 25565
+        self.version = "1.17.1"
 
         if not self.get_data():
             self.save_data()
@@ -63,7 +64,10 @@ class Controller(BaseController):
     def run(self, just_setup=False):
         try:
             self.running = True
-            self.initial_setup()
+            if not self.initial_setup():
+                self.add_to_queue("Setup failed")
+                self.running = False
+                return False
             if not just_setup:
                 self.run_server()
             self.running = False
@@ -146,7 +150,7 @@ class Controller(BaseController):
             eula.close()
             if "eula=true" in data and ospath.isdir(ospath.join(self.path, self.world_file)):
                 chdir(old_dir)
-                return
+                return True
             self.add_to_queue("Editing eula")
             eula = open(ospath.join(self.path, "eula.txt"), "w")
             data = data.replace("eula=false", "eula=true")
@@ -242,13 +246,19 @@ class Controller(BaseController):
             return True
 
     def load_minecraft_jar_versions(self):
-        raw = get("https://launchermeta.mojang.com/mc/game/version_manifest.json").text
+        try:
+            raw = get("https://launchermeta.mojang.com/mc/game/version_manifest.json").text
+        except exceptions.ConnectionError:
+            return
         j = loads(raw)
         versions = j.get("versions")
         self.minecraft_jar_versions = versions
 
     def set_version_to_latest(self):
-        raw = get("https://launchermeta.mojang.com/mc/game/version_manifest.json").text
+        try:
+            raw = get("https://launchermeta.mojang.com/mc/game/version_manifest.json").text
+        except exceptions.ConnectionError:
+            return
         j = loads(raw)
         version = j.get("latest").get("release")
         self.version = version

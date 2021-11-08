@@ -47,6 +47,13 @@ class ConsoleUI(Thread):
         self.obscure_char = "*"
 
     def set_obscure(self, obscure, character="*"):
+        """
+        Sets if the input of the user should be obscured and the character it should be obscured with.
+        :param obscure: A boolean representing whether the input should be obscured.
+        :param character: The character used to obscure the text with.
+        """
+        if not self._running:
+            return
         update_needed = False
 
         if obscure != self.obscure_input:
@@ -88,6 +95,8 @@ class ConsoleUI(Thread):
         :param newline: If a newline should be printed at the end of the string.
         :param loop: If the string should loop around if it can't fit.
         """
+        if not self._running:
+            return
         if not isinstance(string, type("")):
             string = string.__repr__()
         lines = string.split("\n")
@@ -251,6 +260,8 @@ class ConsoleUI(Thread):
         Sets the prefix of the console's input line to a given string.
         :param new_prefix: The prefix to use.
         """
+        if not self._running:
+            return
         self._input_prefix = new_prefix
         max_ = self._max_size
         if (len(self._input_text) + len(self._input_prefix) + 1) > max_:
@@ -265,6 +276,8 @@ class ConsoleUI(Thread):
         """
         Clears the console's input history.
         """
+        if not self._running:
+            return
         self._input_history = []
         self._input_index = -1
         self.hard_update_input()
@@ -273,6 +286,8 @@ class ConsoleUI(Thread):
         """
         Clears the console and buffer for the user.
         """
+        if not self._running:
+            return
         self._console_buffer = []
         self._console_line = 0
         self._console_display_line = 0
@@ -282,6 +297,8 @@ class ConsoleUI(Thread):
         """
         Force redraws the entire screen.
         """
+        if not self._running:
+            return
         self.hard_update_console()
         self.hard_update_input()
 
@@ -289,6 +306,8 @@ class ConsoleUI(Thread):
         """
         Force redraws the output segment of the screen.
         """
+        if not self._running:
+            return
         display_line = self._console_line - self._console_display_line
         for i in range(self._max_size):
             self._Console.move(i, 0)
@@ -303,6 +322,8 @@ class ConsoleUI(Thread):
         """
         Force redraws the input segment of the screen.
         """
+        if not self._running:
+            return
         self._Input.move(0, 0)
         self._Input.clrtoeol()
         self._Input.move(0, 0)

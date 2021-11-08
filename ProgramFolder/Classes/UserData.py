@@ -28,6 +28,13 @@ class UserData:
             return self.save()
         return True
 
+    def get_file_path(self) -> str:
+        """
+        Returns the file path.
+        :return: The path of the file.
+        """
+        return self.file_path
+
     def save(self) -> bool:
         """
         Saves the userdata to file.

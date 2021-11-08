@@ -1,4 +1,4 @@
-from subprocess import check_call, CalledProcessError
+from subprocess import check_call, CalledProcessError, PIPE
 from sys import executable
 from platform import system
 from importlib import util, reload
@@ -7,11 +7,11 @@ from importlib import util, reload
 def install_requirements(requirements):
     try:
         if system() == "Linux":
-            check_call(["sudo", executable, "-m", "pip", "install", "-q", "--upgrade", "pip"])
-            check_call(["sudo", executable, "-m", "pip", "install", "-q", "-r", requirements])
+            check_call(["sudo", executable, "-m", "pip", "install", "-qqq", "--upgrade", "pip"], stderr=PIPE)
+            check_call(["sudo", executable, "-m", "pip", "install", "-qqq", "-r", requirements], stderr=PIPE)
         else:
-            check_call([executable, "-m", "pip", "install", "-q", "--upgrade", "pip"])
-            check_call([executable, "-m", "pip", "install", "-q", "-r", requirements])
+            check_call([executable, "-m", "pip", "install", "-q", "--upgrade", "pip"], stderr=PIPE)
+            check_call([executable, "-m", "pip", "install", "-q", "-r", requirements], stderr=PIPE)
     except CalledProcessError:
         pass
 

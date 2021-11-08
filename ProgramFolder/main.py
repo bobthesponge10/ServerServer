@@ -7,23 +7,21 @@ from Classes import functions
 from Classes import PortHandler
 from json import dumps, loads, JSONDecodeError
 from time import sleep, time
-from os import chdir
-from os import path as ospath
 from sys import version
 from socket import gethostbyname, gethostname
+from os import path as ospath, chdir, getcwd, system
+from sys import argv, executable
+from platform import system as platSys
 
 # STUFF TO DO
-# server status command
-# headless mode
 # prevent subdomain overlap
 # upnp prevent overlap with normal port forwarded ports
 # organize client application (its very messy and bad right now)
+# pid, 1 instance at a time
 
 # LIKE TO DO
 # something with logging
 # add more servers (factorio)
-# upnp support
-# cloudflare api integration
 # run as admin
 # discord bot controller
 # hard exit servers in the event they hang/crash
@@ -42,52 +40,7 @@ from socket import gethostbyname, gethostname
 # backup/change worlds
 
 
-def main():
-
-    # <editor-fold desc="Base Config Values">
-    configFilePath = "ProgramFolder/data/config.json"
-
-    default_config = {
-        "userInfoFile": "ProgramFolder/data/userdata.json",
-        "serverInfoDir": "ProgramFolder/serverTypes/",
-        "instanceDataFile": "ProgramFolder/data/controllerInstances.json",
-        "serverDir": "ServerFolder",
-        "envDir": "ProgramFolder/Env",
-        "socketPort": 10000,
-        "ip": "127.0.0.1",
-        "headless": False,
-        "upnp": False,
-        "cloudflare": False,
-        "cloudflareEmail": "",
-        "cloudflareApiKey": "",
-        "cloudflareDomain": ""
-    }
-
-    # </editor-fold>
-
-    # <editor-fold desc="Config File Loading">
-    try:
-        file = open(configFilePath, "r")
-        data = file.read()
-        file.close()
-    except IOError:
-        data = ""
-        write_data = dumps(default_config)
-        try:
-            file = open(configFilePath, "w")
-            file.write(write_data)
-            file.close()
-        except IOError:
-            pass
-    try:
-        config = loads(data)
-    except JSONDecodeError:
-        config = {}
-
-    for i in default_config:
-        config[i] = config.get(i, default_config[i])
-    # </editor-fold>
-
+def main(config):
     if not isinstance(config["ip"], str) or len(config["ip"].split(".")) != 4:
         config["ip"] = gethostbyname(gethostname())
     PortHandler.get_public_ip()
@@ -99,19 +52,15 @@ def main():
                                       config["cloudflareDomain"], "serverserver")
     PortHandler.wipe_ports()
 
-    new_path = ospath.dirname(ospath.abspath(__file__))
-    if not new_path.endswith("ServerServer"):
-        new_path = ospath.dirname(new_path)
-    chdir(new_path)
-
     user_handles = []
 
     Console = ConsoleUI()
     UserInfo = UserData()
     MainServer = Server()
-    Manager = ControllerManager.ControllerManager(Console, user_handles, PortHandler, config['envDir'])
+    Manager = ControllerManager.ControllerManager(Console, user_handles, PortHandler, config['envDir'], MainServer)
 
-    Console.start()
+    if not config["headless"]:
+        Console.start()
     Console.update_prefix("->")
 
     UserInfo.set_file_path(config["userInfoFile"])
@@ -244,10 +193,70 @@ def main():
 
 
 if __name__ == "__main__":
+
+    chdir(ospath.dirname(ospath.join(argv[0], __file__)))
+
+    # <editor-fold desc="Base Config Values">
+    configFilePath = "data/config.json"
+
+    default_config = {
+        "userInfoFile": "data/userdata.json",
+        "serverInfoDir": "serverTypes/",
+        "instanceDataFile": "data/controllerInstances.json",
+        "serverDir": "../ServerFolder",
+        "envDir": "Env",
+        "socketPort": 10000,
+        "ip": "127.0.0.1",
+        "headless": False,
+        "upnp": False,
+        "cloudflare": False,
+        "cloudflareEmail": "",
+        "cloudflareApiKey": "",
+        "cloudflareDomain": ""
+    }
+
+    # </editor-fold>
+
+    # <editor-fold desc="Config File Loading">
     try:
-        main()
-    except Exception as e:
-        c = ConsoleUI()
-        c.start()
-        c.stop()
-        raise e
+        file = open(configFilePath, "r")
+        data = file.read()
+        file.close()
+    except IOError:
+        data = ""
+        write_data = dumps(default_config)
+        try:
+            file = open(configFilePath, "w")
+            file.write(write_data)
+            file.close()
+        except IOError:
+            pass
+    try:
+        config = loads(data)
+    except JSONDecodeError:
+        config = {}
+
+    for i in default_config:
+        config[i] = config.get(i, default_config[i])
+    # </editor-fold>
+
+    no_new = len(argv) > 1 and "headless" in argv[1:]
+    file = ospath.join(getcwd(), ospath.basename(__file__))
+    if config["headless"] and not no_new:
+        if platSys() == "Windows":
+            system(f"start {executable[:-4]}w.exe {file} headless")
+        elif platSys() == "Linux":
+            system(f"nohup {executable} {file} headless &")
+        elif platSys() == "Darwin":
+            system(f"{executable} {file} headless &")
+
+    else:
+        try:
+            main(config)
+        except Exception as e:
+            c = ConsoleUI()
+            c.start()
+            c.stop()
+            print(e)
+            input(": ")
+            raise e

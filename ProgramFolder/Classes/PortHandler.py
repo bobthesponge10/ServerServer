@@ -399,13 +399,14 @@ class PortHandler:
             if delete and full_port.get("routed"):
                 self.cloudflare.delete_record(full_port.get("domain"), service=full_port.get("service"))
 
-    def get_connection_to_port(self, port):
-        for p in self.all_ports:
+    @classmethod
+    def get_connection_to_port(cls, port):
+        for p in cls.all_ports:
             if p.get("port") == port:
                 if not p.get("forwarded"):
-                    return f"{self.ip}:{port}"
+                    return f"{cls.ip}:{port}"
                 elif not p.get("routed"):
-                    return f"{self.public_ip}:{port}"
+                    return f"{cls.public_ip}:{port}"
                 else:
                     if p.get("srv"):
                         return f"{p.get('domain')}"
@@ -462,7 +463,10 @@ class PortHandler:
     @classmethod
     def get_public_ip(cls):
         if not cls.public_ip:
-            cls.public_ip = requests.get("https://api.ipify.org/").text
+            try:
+                cls.public_ip = requests.get("https://api.ipify.org/").text
+            except requests.exceptions.ConnectionError:
+                cls.public_ip = ""
 
     @classmethod
     def initialize_upnp(cls):
