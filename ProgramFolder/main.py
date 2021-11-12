@@ -17,6 +17,8 @@ from platform import system as platSys
 # prevent subdomain overlap
 # upnp prevent overlap with normal port forwarded ports
 # organize client application (its very messy and bad right now)
+# make change password server side command
+# help for controllers
 
 # LIKE TO DO
 # something with logging
@@ -31,10 +33,9 @@ from platform import system as platSys
 
 # ---minecraft controller stuff
 # edit Settings
-# whitelist stuff
+# whitelisting stuff
 # manage bans
 # output parsing
-# error handling
 # change version
 # backup/change worlds
 
@@ -134,10 +135,7 @@ def main(config):
                         command = parsed[0]
                         args = parsed[1:]
                         result = False
-                        if user.is_server() and command.lower() == "clear":
-                            Console.clear_console()
-                            result = True
-                        elif command.startswith("/"):
+                        if command.startswith("/"):
                             spl1 = command[1:].split(":")
                             path = spl1[0]
                             actual_command = ":".join(spl1[1:])
@@ -231,30 +229,30 @@ if __name__ == "__main__":
 
     # <editor-fold desc="Config File Loading">
     try:
-        file = open(configFilePath, "r")
-        data = file.read()
-        file.close()
+        f = open(configFilePath, "r")
+        data = f.read()
+        f.close()
     except IOError:
         data = ""
         write_data = dumps(default_config)
         try:
-            file = open(configFilePath, "w")
-            file.write(write_data)
-            file.close()
+            f = open(configFilePath, "w")
+            f.write(write_data)
+            f.close()
         except IOError:
             pass
     try:
-        config = loads(data)
+        configData = loads(data)
     except JSONDecodeError:
-        config = {}
+        configData = {}
 
-    for i in default_config:
-        config[i] = config.get(i, default_config[i])
+    for config_key in default_config:
+        configData[config_key] = configData.get(config_key, default_config[config_key])
     # </editor-fold>
 
     no_new = len(argv) > 1 and "headless" in argv[1:]
     script = ospath.join(getcwd(), ospath.basename(__file__))
-    if config["headless"] and not no_new:
+    if configData["headless"] and not no_new:
         if platSys() == "Windows":
             system(f"start {executable[:-4]}w.exe {script} headless")
         elif platSys() == "Linux":
@@ -264,19 +262,18 @@ if __name__ == "__main__":
 
     else:
         try:
-            if ospath.isfile(config["pidFile"]):
-                with open(config["pidFile"], "r") as file:
-                    if check_pid(file.read()):
+            if ospath.isfile(configData["pidFile"]):
+                with open(configData["pidFile"], "r") as f:
+                    if check_pid(f.read()):
                         exit()
-            with open(config["pidFile"], "w") as file:
-                file.write(str(getpid()))
-            main(config)
+            with open(configData["pidFile"], "w") as f:
+                f.write(str(getpid()))
+            main(configData)
         except Exception as e:
             c = ConsoleUI()
             c.start()
             c.stop()
             raise e
         finally:
-            if ospath.isfile(config["pidFile"]):
-                remove(config["pidFile"])
-
+            if ospath.isfile(configData["pidFile"]):
+                remove(configData["pidFile"])

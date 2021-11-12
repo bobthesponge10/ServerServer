@@ -224,6 +224,12 @@ class UserHandle:
         else:
             self.obj.send_packet({"type": "update_prefix", "text": prefix})
 
+    def clear_console(self):
+        if self.server:
+            self.obj.clear_console()
+        else:
+            self.obj.send_packet({"type": "clear_console"})
+
     def get_obj(self):
         return self.obj
 

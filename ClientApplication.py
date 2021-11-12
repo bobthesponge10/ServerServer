@@ -137,8 +137,6 @@ while running:
     for i in console.get_input():
         if i.lower() == "exit":
             running = False
-        elif i.lower() == "clear":
-            console.clear_console()
         elif i.lower() == "changepass":
             change_password(console, C, alg)
         else:
@@ -149,6 +147,8 @@ while running:
             console.print(p["text"], p["newline"], p["loop"])
         elif p["type"] == "set_prefix":
             console.update_prefix(p.get("text"))
+        elif p["type"] == "clear_console":
+            console.clear_console()
 C.stop()
 console.stop()
 

@@ -114,7 +114,7 @@ class ControllerManager:
                              "Use the \"commands\" command to list all avaiable commands.")
                 return True
             if self.is_controller(controller):
-                c = self.parent_object.find_command_from_controller(controller, args[0])
+                c = self.find_command_from_controller(controller, args[0])
                 if c:
                     handle.print(f"{c['default']}:\n{c['help_info']}")
                     return True
@@ -233,6 +233,12 @@ class ControllerManager:
             result += c
             handle.print("\n".join(result))
 
+        @cls.add_command(["clear"], ignore_chars=ignore, global_function=True,
+                         help_info="Clears the console window.")
+        def clear(self, handle, *args, **kwargs):
+            handle.clear_console()
+            return True
+
         @cls.add_command(["message", "m", "msg"], ignore_chars=ignore, global_function=True,
                          help_info="Send a specified user a message\nEx: message <username> <message>")
         def message(self, handle, *args, **kwargs):
@@ -266,8 +272,8 @@ class ControllerManager:
             return True
 
         @cls.add_command(["shutdown"], ignore_chars=ignore, permission=5,
-                         help_info="Shuts down the Server Server stopping all servers")
-        def shutdown(self, handle, *args):
+                         help_info="Shuts down the Server Server stopping all servers", global_function=True)
+        def shutdown(self, handle, *args, **kwargs):
             self.shutdown()
             return True
 
@@ -450,7 +456,7 @@ class ControllerManager:
                 handle.print("Error: Please specify a controller.")
                 return False
             if args[0] in self.get_server_names():
-                self.reload_type(args[0])
+                self.reload_type(args[0], handle)
                 handle.print("Reloaded " + args[0])
                 return True
             handle.print("Error: Not a valid controller.")
@@ -758,14 +764,14 @@ class ControllerManager:
                     try:
                         module = module_from_file(ospath.join(self.server_types_dir, file), "Controller")
                         module.set_manager(self)
-                        module.init_commands()
+                        module.init_class()
                         self.server_types[module.type] = {"module": module, "file": file}
                     except AttributeError:
                         pass
         self.init_instance_storage()
         return True
 
-    def reload_type(self, name):
+    def reload_type(self, name, c=None):
         if name in self.server_types:
             ty = self.server_types[name]
             file = ty["file"]
@@ -778,8 +784,7 @@ class ControllerManager:
                 new_mod.reset_commands()
                 new_mod.set_manager(self)
                 new_mod.set_objects(obj)
-                new_mod.init_commands()
-
+                new_mod.init_class()
                 del self.server_types[name]["module"]
 
                 self.server_types[name]["module"] = new_mod

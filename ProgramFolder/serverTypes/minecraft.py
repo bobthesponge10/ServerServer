@@ -10,6 +10,12 @@ from json import loads
 
 class Controller(BaseController):
     type = "Minecraft"
+    minecraft_jar_versions = []
+    latest_version = ""
+
+    @classmethod
+    def init(cls):
+        cls.load_minecraft_jar_versions()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -19,13 +25,10 @@ class Controller(BaseController):
 
         self.env_manager = self.manager.get_env_manager()
 
-        self.minecraft_jar_versions = []
-        self.load_minecraft_jar_versions()
-
         if len(args) >= 4:
             self.version = args[3]
         else:
-            self.set_version_to_latest()
+            self.version = self.latest_version
 
         self.jar_name = "server.jar"
         self.memory_to_use = 4096
@@ -225,7 +228,7 @@ class Controller(BaseController):
             if not download_url:
                 self.add_to_queue(f"Could not find server jar with version: {self.version}, "
                                   f"using latest version instead")
-                self.set_version_to_latest()
+                self.version = self.latest_version
                 download_url = self.get_download_url()
 
             if not download_url:
@@ -245,23 +248,17 @@ class Controller(BaseController):
                 return False
             return True
 
-    def load_minecraft_jar_versions(self):
+    @classmethod
+    def load_minecraft_jar_versions(cls):
         try:
             raw = get("https://launchermeta.mojang.com/mc/game/version_manifest.json").text
         except exceptions.ConnectionError:
             return
         j = loads(raw)
         versions = j.get("versions")
-        self.minecraft_jar_versions = versions
-
-    def set_version_to_latest(self):
-        try:
-            raw = get("https://launchermeta.mojang.com/mc/game/version_manifest.json").text
-        except exceptions.ConnectionError:
-            return
-        j = loads(raw)
-        version = j.get("latest").get("release")
-        self.version = version
+        latest_version = j.get("latest").get("release")
+        cls.minecraft_jar_versions = versions
+        cls.latest_version = latest_version
 
     def get_java_path(self):
         if not self.env_manager.java_is_installed():
@@ -296,3 +293,63 @@ class Controller(BaseController):
                 return True
             user.print("Error: server not running")
             return False
+
+        @cls.add_class_command(["versions"], help_info="Lists all versions available.\nBy default it only returns"
+                                                       "the full release versions.\n"
+                                                       "To get snapshots pass in 's' after the command. \n"
+                                                       "To get both release versions pass both 'r' and '"
+                                                       "s' after the command.\n"
+                                                       "Some older versions so not have servers. Use the "
+                                                       "'check_version' command to test if a version has a server\n"
+                                                       "Ex: versions r s")
+        def versions(cls, handle, *args, **kwargs):
+            releases = []
+            snapshots = []
+            for i in cls.minecraft_jar_versions:
+                version_type = i.get("type")
+                if version_type == "release":
+                    releases.append(i)
+                elif version_type == "snapshot":
+                    snapshots.append(i)
+            if len(args) < 1 or "r" in args:
+                handle.print("________\nReleases")
+                for i in releases:
+                    handle.print(i.get("id"))
+            if "s" in args:
+                handle.print("_________\nSnapshots")
+                for i in snapshots:
+                    handle.print(i.get("id"))
+            if len(args) > 0 and not "r" in args and not "a" in args:
+                handle.print("Unknown arguments.")
+                return False
+            return True
+
+        @cls.add_class_command(["checkversion"], default="check_version", help_info="Checks if a given version has a "
+                                                                                    "valid server file.\n"
+                                                                                    "Ex: check_version <version>",
+                               ignore_chars=["_"])
+        def versions(cls, handle, *args, **kwargs):
+            if len(args) < 1:
+                handle.print("Please give a version to check.")
+                return False
+
+            list_ = [i for i in cls.minecraft_jar_versions if i.get("id") == args[0]]
+            if len(list_) == 0:
+                handle.print(f"'{args[0]}' is not a valid minecraft version.")
+                return False
+            url = list_[0].get("url")
+            if not url:
+                handle.print(f"'{args[0]}' does not have a server file.")
+                return None
+            raw = get(url).text
+            j = loads(raw)
+            server = j.get("downloads", {}).get("server")
+            if not server:
+                handle.print(f"'{args[0]}' does not have a server file.")
+                return None
+            download_url = server.get("url")
+            if not download_url:
+                handle.print(f"'{args[0]}' does not have a server file.")
+                return None
+            handle.print(f"'{args[0]}' does have a server file.")
+            return True

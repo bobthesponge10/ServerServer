@@ -107,6 +107,16 @@ class BaseController:
     @classmethod
     def get_manager(cls):
         return cls.manager
+
+    @classmethod
+    def init(cls):
+        pass
+
+    @classmethod
+    def init_class(cls):
+        cls.init_commands()
+        cls.init()
+
     # </editor-fold>
 
     # <editor-fold desc="Commands">

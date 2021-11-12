@@ -2,3 +2,5 @@ pyperclip
 windows_curses; sys_platform == 'win32'
 requests
 cloudflare
+flask
+gevent
