@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% set active = "Servers" %}
+{% block head %}
+{{super()}}
+<script src="https://kit.fontawesome.com/3e486b8572.js" crossorigin="anonymous"></script>
+{% endblock %}
+{% block content %}
+<p>Controller: <a class="link" href="{{url_for('controller', controller=server.type)}}">{{server.type}}</a></p>
+<div class="server_item_div">
+    {% if running %}
+    <h1 class="server_item" style="padding-left: 0px">{{server.get_name()}} <span style="color: green;">Online</span></h1>
+    <form id="stop" method="post">
+        <input type="hidden" name="stop">
+    </form>
+    <button class="btn disabled" ><i class="fas fa-play server_item" style="color: gray; font-size:30px;"></i></button>
+    <button class="btn" type="submit" form="stop" value="1">
+        <i class="fas fa-stop server_item" style="color: red; font-size:30px;"></i>
+    </button>
+    {% else %}
+    <h1 class="server_item" style="padding-left: 0px">{{server.get_name()}} <span style="color: red;">Offline</span></h1>
+    <form id="start" method="post">
+        <input type="hidden" name="start">
+    </form>
+    <button class="btn" type="submit" form="start" value="1">
+        <i class="fas fa-play server_item" style="color: green; font-size:30px;"></i>
+    </button>
+    <button class="btn disabled" ><i class="fas fa-stop server_item" style="color: gray; font-size:30px;"></i></button>
+    {% endif %}
+
+</div>
+<h3>Address: {{server.get_address()}}</h3>
+{% for i in server.get_info().split("\n")%}
+    <h3>{{i}}</h3>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    {% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Server Server {{active}}</title>
+    {% endblock %}
+</head>
+<body>
+
+    <div class="topnav">
+        {% include "header.html" ignore missing %}
+    </div>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+    <div class="footer">
+      {% block footer %}
+      {#&copy; Copyright 2010 by <a href="http://domain.invalid/">you</a>.#}
+      {% endblock %}
+    </div>
+</body>
+</html>

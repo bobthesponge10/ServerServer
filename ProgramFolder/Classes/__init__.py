@@ -17,3 +17,4 @@ from .Client import Client
 from .UserHandle import UserHandle
 from .PortHandler import PortHandler
 from .EnvManager import EnvManager
+from .gui import GUI

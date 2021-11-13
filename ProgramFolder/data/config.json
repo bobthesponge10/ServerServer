@@ -6,6 +6,7 @@
   "pidFile": "data/serverserver.pid",
   "envDir":"Env",
   "socketPort": 10000,
+  "webServerPort": 80,
   "ip": "127.0.0.1",
   "headless": false,
   "upnp": false,

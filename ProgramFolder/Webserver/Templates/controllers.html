@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% set active = "Controllers" %}
+{% block content %}
+  <h1>Controllers</h1>
+  {% for c in controllers %}
+    <a class="button_link" href={{url_for("controller", controller=c)}}>
+      <div class="box">
+        <h2 class="important">{{c}}</h2>
+      </div>
+    </a>
+  {% endfor %}
+{% endblock %}

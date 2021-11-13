@@ -5,6 +5,7 @@ from Classes import ControllerManager
 from Classes import UserHandle
 from Classes import functions
 from Classes import PortHandler
+from Classes import GUI
 from json import dumps, loads, JSONDecodeError
 from time import sleep, time
 from sys import version
@@ -58,6 +59,7 @@ def main(config):
     UserInfo = UserData()
     MainServer = Server()
     Manager = ControllerManager.ControllerManager(Console, user_handles, PortHandler, config['envDir'], MainServer)
+    Gui = GUI(Manager)
 
     if not config["headless"]:
         Console.start()
@@ -81,7 +83,12 @@ def main(config):
     MainServer.set_ip(config["ip"])
     MainServer.set_port(server_port_handler.request_port(config['socketPort'], description="Controller", TCP=True))
     MainServer.start()
-    Console.print(f"Hosted socket server at {MainServer.get_ip()}:{MainServer.get_port()}")
+
+    Gui.set_ip(config["ip"])
+    Gui.set_port(server_port_handler.request_port(config['webServerPort'], description="WebServer"))
+    Gui.start()
+    Console.print(f"Hosted web server at {PortHandler.get_connection_to_port(Gui.get_port())}")
+    Console.print(f"Hosted socket server at {PortHandler.get_connection_to_port(MainServer.get_port())}")
     Console.print(f"UPNP: " + ("Working" if PortHandler.upnp.get_connected() else "Disconnected"))
     Console.print(f"CloudFlare: " + ("Working" if PortHandler.cloudflare.get_connected() else "Disconnected"))
 
@@ -174,6 +181,7 @@ def main(config):
     Manager.save_instances_to_file()
     Console.print("Stopping socket server")
     MainServer.stop()
+    Gui.stop()
     server_port_handler.remove()
 
     start_time = time()
@@ -197,6 +205,8 @@ def check_pid(pid):
         return False
     except ValueError:
         return False
+    except SystemError:
+        return False
     else:
         return True
 
@@ -216,6 +226,7 @@ if __name__ == "__main__":
         "pidFile": "data/serverserver.pid",
         "envDir": "Env",
         "socketPort": 10000,
+        "webServerPort": 80,
         "ip": "127.0.0.1",
         "headless": False,
         "upnp": False,
