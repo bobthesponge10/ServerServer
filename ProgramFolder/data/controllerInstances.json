@@ -1,1 +1,1 @@
-{"Minecraft": [{"name": "smp", "data": {"port": 25565, "jar_name": "server.jar", "world_file": "world", "version": "1.17.1", "memory_to_use": 4096}}, {"name": "modded", "data": {"port": 25565, "jar_name": "server.jar", "world_file": "world", "version": "1.17.1", "memory_to_use": 4096}}]}
+{"Minecraft": [{"name": "Smp", "data": {"port": 25565, "jar_name": "server.jar", "world_file": "world", "version": "1.12.1", "memory_to_use": 4096}}]}

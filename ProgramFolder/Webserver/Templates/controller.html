@@ -1,5 +1,9 @@
 {% extends "layout.html" %}
 {% set active = "Controllers" %}
+{% block head %}
+  {{super()}}
+  <script type="text/javascript" src="{{url_for('static', filename='popup.js')}}"></script>
+{% endblock %}
 {% block content %}
 <div class="server_item_div" style="margin: 10px;">
   <h1 class="server_item">{{controller}}</h1>
@@ -15,7 +19,7 @@
   {% endfor %}
 <div id="popup_bg">
   <div id="popup_main_div">
-    <form class="login" style="margin: 20px;" id="make_server" method="POST">
+    <form class="login" style="margin: 20px;" id="popup_send" method="POST">
       <label class="login" for="name">Server Name:</label><br>
       <input class="login" type="text" name="server_name" value="" id="name"><br>
       <label class="login" for="args">Additional arguments:</label><br>
@@ -27,17 +31,4 @@
     </div>
   </div>
 </div>
-<script type="text/javascript">
-  var popupDiv = document.getElementById("popup_bg");
-  var popupForm = document.getElementById("make_server");
-  function openPopupMenu(){
-    popupDiv.style.display = "block";
-  }
-  function closePopupMenu(){
-    popupDiv.style.display = "none";
-  }
-  function sendPopupMenu(){
-    popupForm.submit()
-  }
-</script>
 {% endblock %}

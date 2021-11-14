@@ -2,8 +2,10 @@
 {% set active = "Home" %}
 {% block content %}
   <h1>Server Server</h1>
+  <p>
   <h4>Server Server Status</h4>
   {% for s in status%}
-  <p>{{s}}</p>
+  {{s}}<br>
   {% endfor %}
+  </p>
 {% endblock %}

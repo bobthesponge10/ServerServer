@@ -91,15 +91,15 @@ def main(config):
     Console.print(f"Loaded {len(Manager.get_server_names())} server type(s) from '{config['serverInfoDir']}'")
 
     server_port_handler = PortHandler()
-    MainServer.set_ip(config["ip"])
-    MainServer.set_port(server_port_handler.request_port(config['socketPort'], description="Controller", TCP=True))
-    MainServer.start()
+    if config["socketServer"]:
+        MainServer.set_ip(config["ip"])
+        MainServer.set_port(server_port_handler.request_port(config['socketPort'], description="Controller", TCP=True))
+        MainServer.start()
 
     if config["webserver"]:
         Gui.set_manager(Manager)
         Gui.set_ip(config["ip"])
-        Gui.set_port(server_port_handler.request_port(config['webServerPort'], description="WebServer", TCP=True,
-                                                      srv_service="http", subdomain_name="serverserver", proxy=True))
+        Gui.set_port(server_port_handler.request_port(config['webServerPort'], description="WebServer", TCP=True))
         Gui.create_app()
         Gui.start()
 
@@ -248,6 +248,7 @@ if __name__ == "__main__":
         "serverDir": "../ServerFolder",
         "pidFile": "data/serverserver.pid",
         "envDir": "Env",
+        "socketServer": True,
         "socketPort": 10000,
         "webserver": True,
         "webServerPort": 80,

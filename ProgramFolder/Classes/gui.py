@@ -95,10 +95,22 @@ class GUI:
                 if "start" in request.form.keys():
                     if not server_.get_running():
                         server_.start()
+                        flash(f"Started {server}")
                 elif "stop" in request.form.keys():
                     if server_.get_running():
                         server_.stop()
+                        flash(f"Stopped {server}")
                         return render_template("server.html", server=server_, running=False)
+                elif "delete" in request.form.keys():
+                    if server_.get_running():
+                        flash(f"Can't delete running server")
+                    else:
+                        if self.manager.remove_instance(controller, server):
+                            flash(f"Deleted {server}")
+                            return redirect(url_for("controller", controller=controller))
+                        else:
+                            flash(f"Error deleting {server}")
+
                 return redirect(url_for("server", controller=controller, server=server))
             return render_template("server.html", server=server_, running=server_.get_running())
 

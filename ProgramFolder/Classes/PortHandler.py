@@ -388,7 +388,8 @@ class PortHandler:
              "routed": routed,
              "domain": name,
              "srv": srv,
-             "service": srv_service}
+             "service": srv_service,
+             "proxy": proxy}
 
         self.all_ports.append(p)
         self.taken_ports.append(p)
@@ -423,6 +424,11 @@ class PortHandler:
                 if not p.get("forwarded"):
                     return f"{cls.ip}:{port}"
                 elif not p.get("routed"):
+                    if cls.cloudflare.get_connected():
+                        d = cls.cloudflare.get_base_domain()
+                        if p.get("proxy"):
+                            d = cls.cloudflare.get_base_domain_proxy()
+                        return f"{d}.{cls.cloudflare.get_domain()}:{port}"
                     return f"{cls.public_ip}:{port}"
                 else:
                     if p.get("srv"):

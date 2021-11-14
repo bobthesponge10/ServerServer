@@ -1,5 +1,9 @@
 {% extends "layout.html" %}
 {% set active = "Servers" %}
+{% block head %}
+  {{super()}}
+  <script type="text/javascript" src="{{url_for('static', filename='popup.js')}}"></script>
+{% endblock %}
 {% block content %}
 <p>Controller: <a class="link" href="{{url_for('controller', controller=server.type)}}">{{server.type}}</a></p>
 <div class="server_item_div">
@@ -22,10 +26,26 @@
     </button>
     <button class="btn disabled" ><i class="fas fa-stop server_item" style="color: gray; font-size:30px;"></i></button>
     {% endif %}
-
 </div>
 <h3>Address: {{server.get_address()}}</h3>
 {% for i in server.get_info().split("\n")%}
     <h3>{{i}}</h3>
 {% endfor %}
+{% if not running %}
+<h3 class="btn server_item" onclick="openPopupMenu()" style="color: red; margin-left:0px;">Delete Server?</h3>
+{% else %}
+<h3 class="btn server_item disabled" style="color: gray; margin-left:0px;">Delete Server?</h3>
+{% endif %}
+<div id="popup_bg">
+  <div id="popup_main_div">
+    <form style="margin: 20px;" id="popup_send" method="POST">
+        <h1>Are you sure you want to delete {{server.get_name()}}?</h1>
+        <input type="hidden" name="delete">
+    </form>
+    <div class="topnav bottomnav">
+      <p class="right hover" onclick="sendPopupMenu()">Confirm</p>
+      <p class="right hover" onclick="closePopupMenu()">Cancel</p>
+    </div>
+  </div>
+</div>
 {% endblock %}
