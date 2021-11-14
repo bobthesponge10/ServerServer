@@ -1,8 +1,9 @@
 {% extends "layout.html" %}
 {% set active = "Home" %}
 {% block content %}
-  <h1>Gooey</h1>
-  <p class="important">
-    by, joe mama.
-  </p>
+  <h1>Server Server</h1>
+  <h4>Server Server Status</h4>
+  {% for s in status%}
+  <p>{{s}}</p>
+  {% endfor %}
 {% endblock %}

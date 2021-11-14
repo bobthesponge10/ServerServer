@@ -1,8 +1,17 @@
 {% extends "layout.html" %}
 {% set active = "Settings" %}
 {% block content %}
-  <h1>Da Settings</h1>
-  <p class="important">
-    beep boop
-  </p>
+  <h1>Config Settings</h1>
+  <table>
+    <tr>
+      <th>Setting</th>
+      <th>Value</th>
+    </tr>
+    {% for i in config%}
+      <tr>
+        <td>{{i}}</td>
+        <td>'{{config[i]}}'</td>
+      </tr>
+    {% endfor %}
+  </table>
 {% endblock %}

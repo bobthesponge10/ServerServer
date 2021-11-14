@@ -1,7 +1,10 @@
 {% extends "layout.html" %}
 {% set active = "Controllers" %}
 {% block content %}
-<h1>{{controller}}</h1>
+<div class="server_item_div" style="margin: 10px;">
+  <h1 class="server_item">{{controller}}</h1>
+  <i class="fas fa-plus server_item btn" style="color: green; font-size:30px;" onclick="openPopupMenu()"></i>
+</div>
   {% for c in servers %}
     <a class="button_link" href={{url_for("server", controller=controller, server=c)}}>
       <div class="box">
@@ -10,4 +13,31 @@
       </div>
     </a>
   {% endfor %}
+<div id="popup_bg">
+  <div id="popup_main_div">
+    <form class="login" style="margin: 20px;" id="make_server" method="POST">
+      <label class="login" for="name">Server Name:</label><br>
+      <input class="login" type="text" name="server_name" value="" id="name"><br>
+      <label class="login" for="args">Additional arguments:</label><br>
+      <input class="login" type="text" name="args" value="" id="args"><br>
+    </form>
+    <div class="topnav bottomnav">
+      <p class="right hover" onclick="sendPopupMenu()">Confirm</p>
+      <p class="right hover" onclick="closePopupMenu()">Cancel</p>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+  var popupDiv = document.getElementById("popup_bg");
+  var popupForm = document.getElementById("make_server");
+  function openPopupMenu(){
+    popupDiv.style.display = "block";
+  }
+  function closePopupMenu(){
+    popupDiv.style.display = "none";
+  }
+  function sendPopupMenu(){
+    popupForm.submit()
+  }
+</script>
 {% endblock %}

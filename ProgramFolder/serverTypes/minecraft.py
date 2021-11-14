@@ -34,7 +34,6 @@ class Controller(BaseController):
         self.memory_to_use = 4096
         self.world_file = "world"
         self.port = 25565
-        self.version = "1.17.1"
 
         if not self.get_data():
             self.save_data()

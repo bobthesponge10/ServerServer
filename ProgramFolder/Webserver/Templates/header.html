@@ -1,9 +1,8 @@
 {% set navigation = [(url_for('home'), 'Home'),
                      (url_for('controllers'), 'Controllers'),
                      (url_for('servers'), 'Servers'),
-                     (url_for('console'), 'Console'),
                      (url_for('settings'), 'Settings')] %}
-
+{#(url_for('console'), 'Console'),#}
 {% for item in navigation%}
 <a
     {% if active == item[1] %}

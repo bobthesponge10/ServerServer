@@ -99,12 +99,7 @@ class ControllerManager:
         @cls.add_command(["status"], ignore_chars=ignore, global_function=True,
                          help_info="Displays some basic info on the status of the server server.")
         def status(self, handle, *args, **kwargs):
-            handle.print(version)
-            handle.print(f"Loaded {len(handle.user_data.get_users())} user(s) from '{handle.user_data.get_file_path()}'")
-            handle.print(f"Loaded {len(self.get_server_names())} server type(s) from '{self.instances_data_file}'")
-            handle.print(f"Hosted socket server at {self.port_handler.get_connection_to_port(self.socket_server.get_port())}")
-            handle.print(f"UPNP: " + ("Working" if self.port_handler.upnp.get_connected() else "Disconnected"))
-            handle.print(f"CloudFlare: " + ("Working" if self.port_handler.cloudflare.get_connected() else "Disconnected"))
+            handle.print("\n".join(self.get_status()))
 
         @cls.add_command(["help", "h"], ignore_chars=ignore, global_function=True, default="help",
                          help_info="Use this command to find out how to use a command. Ex: help <command>")
@@ -623,7 +618,7 @@ class ControllerManager:
 
     # </editor-fold>
 
-    def __init__(self, ConsoleObj, handle_list, port_handler, env_path, socket_server):
+    def __init__(self, ConsoleObj, handle_list, port_handler, env_path, socket_server, user_data, gui, config):
         self.parent_object = type(self)
         self.objects.append(self)
 
@@ -638,11 +633,23 @@ class ControllerManager:
 
         self.env_manager = EnvManager(env_path)
         self.socket_server = socket_server
+        self.user_data = user_data
+        self.gui = gui
 
+        self.config = config
         self.handle_list = handle_list
 
         self.reload_needed = False
         self.shutdown_needed = False
+
+    def get_config(self):
+        return self.config
+
+    def get_user_data(self):
+        return self.user_data
+
+    def get_gui(self):
+        return self.gui
 
     def get_env_manager(self):
         return self.env_manager
@@ -906,3 +913,21 @@ class ControllerManager:
             for cont in self.instances:
                 for ins in self.instances[cont]:
                     running = running or ins.get_running()
+
+    def get_status(self):
+        status = []
+        status.append(version)
+        status.append(f"Loaded {len(self.user_data.get_users())} user(s) from '{self.user_data.get_file_path()}'")
+        status.append(f"Loaded {len(self.get_server_names())} server type(s) from '{self.instances_data_file}'")
+        if self.gui.get_running():
+            status.append(f"Hosted web server at {self.port_handler.get_connection_to_port(self.gui.get_port())}")
+        else:
+            status.append(f"Web server: Disconnected")
+        if self.socket_server.get_running():
+            status.append(
+                f"Hosted socket server at {self.port_handler.get_connection_to_port(self.socket_server.get_port())}")
+        else:
+            status.append(f"Socket server: Disconnected")
+        status.append(f"UPNP: " + ("Working" if self.port_handler.upnp.get_connected() else "Disconnected"))
+        status.append(f"CloudFlare: " + ("Working" if self.port_handler.cloudflare.get_connected() else "Disconnected"))
+        return status

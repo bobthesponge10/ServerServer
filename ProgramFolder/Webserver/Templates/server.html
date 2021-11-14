@@ -1,9 +1,5 @@
 {% extends "layout.html" %}
 {% set active = "Servers" %}
-{% block head %}
-{{super()}}
-<script src="https://kit.fontawesome.com/3e486b8572.js" crossorigin="anonymous"></script>
-{% endblock %}
 {% block content %}
 <p>Controller: <a class="link" href="{{url_for('controller', controller=server.type)}}">{{server.type}}</a></p>
 <div class="server_item_div">

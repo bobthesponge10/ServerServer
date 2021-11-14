@@ -23,6 +23,7 @@ from platform import system as platSys
 # socket server option in config
 # fix status command for webserver
 # secure the webserver
+# simulate/run commands from code.
 
 # LIKE TO DO
 # something with logging
@@ -61,12 +62,19 @@ def main(config):
     Console = ConsoleUI()
     UserInfo = UserData()
     MainServer = Server()
-    Manager = ControllerManager.ControllerManager(Console, user_handles, PortHandler, config['envDir'], MainServer)
-    Gui = GUI(Manager, UserInfo)
+    Gui = GUI()
+    Manager = ControllerManager.ControllerManager(Console,
+                                                  user_handles,
+                                                  PortHandler,
+                                                  config['envDir'],
+                                                  MainServer,
+                                                  UserInfo,
+                                                  Gui,
+                                                  config)
 
     if not config["headless"]:
         Console.start()
-    Console.update_prefix("->")
+        Console.update_prefix("->")
 
     UserInfo.set_file_path(config["userInfoFile"])
     UserInfo.load()
@@ -88,11 +96,22 @@ def main(config):
     MainServer.start()
 
     if config["webserver"]:
+        Gui.set_manager(Manager)
         Gui.set_ip(config["ip"])
-        Gui.set_port(server_port_handler.request_port(config['webServerPort'], description="WebServer"))
+        Gui.set_port(server_port_handler.request_port(config['webServerPort'], description="WebServer", TCP=True,
+                                                      srv_service="http", subdomain_name="serverserver", proxy=True))
+        Gui.create_app()
         Gui.start()
+
+    if Gui.get_running():
         Console.print(f"Hosted web server at {PortHandler.get_connection_to_port(Gui.get_port())}")
-    Console.print(f"Hosted socket server at {PortHandler.get_connection_to_port(MainServer.get_port())}")
+    else:
+        Console.print(f"Web server: Disconnected")
+    if MainServer.get_running():
+        Console.print(f"Hosted socket server at {PortHandler.get_connection_to_port(MainServer.get_port())}")
+    else:
+        Console.print(f"Socket server: Disconnected")
+
     Console.print(f"UPNP: " + ("Working" if PortHandler.upnp.get_connected() else "Disconnected"))
     Console.print(f"CloudFlare: " + ("Working" if PortHandler.cloudflare.get_connected() else "Disconnected"))
 

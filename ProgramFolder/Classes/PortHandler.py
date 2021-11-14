@@ -14,7 +14,7 @@ class CloudflareWrapper:
         self.api_key = ""
         self.domain = ""
         self.base_domain = ""
-
+        self.proxy_domain = ""
         self.cf = None
 
         self.connected = False
@@ -60,11 +60,22 @@ class CloudflareWrapper:
         self.api_key = api_key
         self.domain = domain
         self.base_domain = base_domain
+        self.proxy_domain = base_domain+"p"
 
         try:
             self.attempting = True
             self.cf = CloudFlare.CloudFlare(email=self.email, token=self.api_key)
-            if not self.ensure_dns_record({"name": f"{self.base_domain}.{self.domain}", "type": "A", "content": public_ip}):
+            if not self.ensure_dns_record({"name": f"{self.base_domain}.{self.domain}",
+                                           "type": "A",
+                                           "content": public_ip}):
+                self.cf = None
+                self.connected = False
+                self.attempting = False
+                return False
+            if not self.ensure_dns_record({"name": f"{self.proxy_domain}.{self.domain}",
+                                           "type": "A",
+                                           "content": public_ip,
+                                           "proxied": True}):
                 self.cf = None
                 self.connected = False
                 self.attempting = False
@@ -83,6 +94,9 @@ class CloudflareWrapper:
 
     def get_base_domain(self):
         return self.base_domain
+
+    def get_base_domain_proxy(self):
+        return self.proxy_domain
 
     def get_connected(self):
         return self.connected
@@ -302,7 +316,7 @@ class PortHandler:
         self.taken_ports = []
 
     def request_port(self, port, max_number=-1, description="",
-                     TCP=False, UDP=False, subdomain_name="", srv_service=""):
+                     TCP=False, UDP=False, subdomain_name="", srv_service="", proxy=False):
         if max_number == -1 or max_number > 65535:
             max_number = 65535
 
@@ -313,7 +327,8 @@ class PortHandler:
                 return -1
             if self.check_port_availability(port):
                 self._add_port(port, description=description,
-                               TCP=TCP, UDP=UDP, subdomain_name=subdomain_name, srv_service=srv_service)
+                               TCP=TCP, UDP=UDP, subdomain_name=subdomain_name, srv_service=srv_service,
+                               proxy=proxy)
                 return port
             port += 1
 
@@ -324,21 +339,23 @@ class PortHandler:
             return False
         return True
 
-    def _add_port(self, port, description="", TCP=False, UDP=False, subdomain_name="", srv_service=""):
+    def _add_port(self, port, description="", TCP=False, UDP=False, subdomain_name="", srv_service="", proxy=False):
         forwarded = False
         if self.use_upnp and self.upnp.get_connected() and (TCP or UDP):
             if TCP:
-                self.upnp.forward_port(port, "TCP", port, self.ip, "ServerServer-" + description)
-                forwarded = True
+                forwarded = self.upnp.forward_port(port, "TCP", port, self.ip, "ServerServer-" + description)
             if UDP:
-                self.upnp.forward_port(port, "UDP", port, self.ip, "ServerServer-" + description)
-                forwarded = True
+                forwarded = forwarded or self.upnp.forward_port(port, "UDP", port, self.ip,
+                                                                "ServerServer-" + description)
         routed = False
         name = ""
         srv = False
         if forwarded and self.use_cloudflare and self.cloudflare.get_connected() and subdomain_name:
             name = f"{subdomain_name}.{self.cloudflare.get_domain()}"
-            base_domain = f"{self.cloudflare.get_base_domain()}.{self.cloudflare.get_domain()}"
+            if proxy:
+                base_domain = f"{self.cloudflare.get_base_domain_proxy()}.{self.cloudflare.get_domain()}"
+            else:
+                base_domain = f"{self.cloudflare.get_base_domain()}.{self.cloudflare.get_domain()}"
             if srv_service:
                 if TCP:
                     r = {"type": "SRV", "name": f"_{srv_service}._tcp.{name}", "content": f"0\\{port}\\tt{base_domain}",
