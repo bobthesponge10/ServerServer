@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% set active = "Home" %}
+{% set not_logged_in = True %}
+{% block content %}
+<h1>Login</h1>
+<form class="login" method="post">
+    <label class="login" for="username">Username:</label><br>
+    <input class="login" type="text" id="username" name="username" value=""><br>
+    <label class="login" for="password">Password:</label><br>
+    <input class="login" type="password" id="password" name="password" value=""><br><br>
+    <input class="login" type="submit" value="Submit">
+</form>
+{% endblock %}

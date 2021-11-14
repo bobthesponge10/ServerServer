@@ -20,7 +20,8 @@ from platform import system as platSys
 # organize client application (its very messy and bad right now)
 # make change password server side command
 # help for controllers
-# webserver option in config
+# socket server option in config
+# fix status command for webserver
 # secure the webserver
 
 # LIKE TO DO
@@ -61,7 +62,7 @@ def main(config):
     UserInfo = UserData()
     MainServer = Server()
     Manager = ControllerManager.ControllerManager(Console, user_handles, PortHandler, config['envDir'], MainServer)
-    Gui = GUI(Manager)
+    Gui = GUI(Manager, UserInfo)
 
     if not config["headless"]:
         Console.start()
@@ -86,10 +87,11 @@ def main(config):
     MainServer.set_port(server_port_handler.request_port(config['socketPort'], description="Controller", TCP=True))
     MainServer.start()
 
-    Gui.set_ip(config["ip"])
-    Gui.set_port(server_port_handler.request_port(config['webServerPort'], description="WebServer"))
-    Gui.start()
-    Console.print(f"Hosted web server at {PortHandler.get_connection_to_port(Gui.get_port())}")
+    if config["webserver"]:
+        Gui.set_ip(config["ip"])
+        Gui.set_port(server_port_handler.request_port(config['webServerPort'], description="WebServer"))
+        Gui.start()
+        Console.print(f"Hosted web server at {PortHandler.get_connection_to_port(Gui.get_port())}")
     Console.print(f"Hosted socket server at {PortHandler.get_connection_to_port(MainServer.get_port())}")
     Console.print(f"UPNP: " + ("Working" if PortHandler.upnp.get_connected() else "Disconnected"))
     Console.print(f"CloudFlare: " + ("Working" if PortHandler.cloudflare.get_connected() else "Disconnected"))
@@ -228,6 +230,7 @@ if __name__ == "__main__":
         "pidFile": "data/serverserver.pid",
         "envDir": "Env",
         "socketPort": 10000,
+        "webserver": True,
         "webServerPort": 80,
         "ip": "127.0.0.1",
         "headless": False,

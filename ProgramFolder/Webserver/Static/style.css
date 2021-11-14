@@ -16,14 +16,19 @@ body {
   background-color: #333;
 }
 
-.topnav a {
+.topnav a, .topnav p{
   float: left;
   color: #f2f2f2;
   text-align: center;
   padding: 14px 16px;
+  margin: 0px;
   text-decoration: none;
   font-size: 17px;
   transition: 0.3s;
+}
+
+.topnav a.right, .topnav p.right{
+  float: right;
 }
 
 .topnav a.active:hover{
@@ -75,9 +80,8 @@ a.link {
     margin: 5px;
 }
 h2.button_item{
-    font-size: 40   px;
+    font-size: 40px;
 }
-
 .server_item_div{
     overflow: hidden;
 }
@@ -108,4 +112,18 @@ h2.button_item{
 
 .disabled:hover{
     background-color: transparent;
+}
+
+.login form{
+    margin: 10px;
+}
+
+.login label{
+    margin: 10px 10px 10px 0px;
+    font-size 17px;
+}
+
+.login input{
+    margin: 0px 10px 10px 0px;
+    font-size: 25px;
 }

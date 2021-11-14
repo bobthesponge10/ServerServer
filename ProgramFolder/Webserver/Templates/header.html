@@ -12,3 +12,16 @@
     href='{{item[0]}}'>{{item[1]}}</a>
 {% endfor %}
 
+{% if not not_logged_in %}
+<a class="right" href="{{url_for('logout')}}">Logout</a>
+{% endif %}
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <p class="right">{{ messages[0] }}</p>
+    {% else %}
+        {% if session.get("username")%}
+            <p class="right">{{session.get("username")}}</p>
+        {% endif %}
+    {% endif %}
+{% endwith %}

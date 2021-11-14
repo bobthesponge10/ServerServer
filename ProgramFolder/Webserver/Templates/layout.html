@@ -8,7 +8,6 @@
     {% endblock %}
 </head>
 <body>
-
     <div class="topnav">
         {% include "header.html" ignore missing %}
     </div>
@@ -16,9 +15,8 @@
         {% block content %}{% endblock %}
     </div>
     <div class="footer">
-      {% block footer %}
-      {#&copy; Copyright 2010 by <a href="http://domain.invalid/">you</a>.#}
-      {% endblock %}
+        {% block footer %}
+        {% endblock %}
     </div>
 </body>
 </html>
