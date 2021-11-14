@@ -60,17 +60,17 @@ class GUI:
                 return redirect(url_for("home"))
             if not self.manager.is_server(controller, server):
                 return redirect(url_for("home"))
-            server = self.manager.get_instance_from_type_and_name(controller, server)
+            server_ = self.manager.get_instance_from_type_and_name(controller, server)
             if request.method == 'POST':
                 if "start" in request.form.keys():
-                    if not server.get_running():
-                        server.start()
+                    if not server_.get_running():
+                        server_.start()
                 elif "stop" in request.form.keys():
-                    if server.get_running():
-                        server.stop()
-                        return render_template("server.html", server=server, running=False)
+                    if server_.get_running():
+                        server_.stop()
+                        return render_template("server.html", server=server_, running=False)
                 return redirect(url_for("server", controller=controller, server=server))
-            return render_template("server.html", server=server, running=server.get_running())
+            return render_template("server.html", server=server_, running=server_.get_running())
 
         @app.route("/servers")
         def servers():

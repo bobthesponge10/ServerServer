@@ -8,7 +8,7 @@
 <p>Controller: <a class="link" href="{{url_for('controller', controller=server.type)}}">{{server.type}}</a></p>
 <div class="server_item_div">
     {% if running %}
-    <h1 class="server_item" style="padding-left: 0px">{{server.get_name()}} <span style="color: green;">Online</span></h1>
+    <h1 class="server_item" style="margin-left: 0px">{{server.get_name()}} <span style="color: green;">Online</span></h1>
     <form id="stop" method="post">
         <input type="hidden" name="stop">
     </form>
@@ -17,7 +17,7 @@
         <i class="fas fa-stop server_item" style="color: red; font-size:30px;"></i>
     </button>
     {% else %}
-    <h1 class="server_item" style="padding-left: 0px">{{server.get_name()}} <span style="color: red;">Offline</span></h1>
+    <h1 class="server_item" style="margin-left: 0px">{{server.get_name()}} <span style="color: red;">Offline</span></h1>
     <form id="start" method="post">
         <input type="hidden" name="start">
     </form>

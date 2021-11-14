@@ -20,6 +20,8 @@ from platform import system as platSys
 # organize client application (its very messy and bad right now)
 # make change password server side command
 # help for controllers
+# webserver option in config
+# secure the webserver
 
 # LIKE TO DO
 # something with logging
