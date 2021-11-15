@@ -108,8 +108,11 @@ class Controller(BaseController):
 
     def stop(self):
         if self.running and self.process:
-            self.process.stdin.write(b"stop\n")
-            self.process.stdin.flush()
+            try:
+                self.process.stdin.write(b"stop\n")
+                self.process.stdin.flush()
+            except ValueError:
+                pass
 
     def shutdown(self):
         self.stop()

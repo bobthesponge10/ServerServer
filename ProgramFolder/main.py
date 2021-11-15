@@ -24,6 +24,7 @@ from platform import system as platSys
 # fix status command for webserver
 # secure the webserver
 # simulate/run commands from code.
+# javascript login
 
 # LIKE TO DO
 # something with logging
