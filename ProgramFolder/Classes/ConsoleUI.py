@@ -1,10 +1,11 @@
-from threading import Thread
 from queue import Queue, Empty
 import curses
 from curses import ascii
 from pyperclip import paste, copy
 from math import ceil
 from typing import List
+from threading import Thread
+import time
 
 
 class ConsoleUI(Thread):
@@ -161,6 +162,7 @@ class ConsoleUI(Thread):
             self._Screen = curses.initscr()
             curses.noecho()
             curses.cbreak()
+            self._Screen.nodelay(True)
 
             self._Screen.keypad(True)
             self._get_max_size()
@@ -191,7 +193,11 @@ class ConsoleUI(Thread):
         """
         while self._running:
             try:
-                inp = self._Screen.getkey()
+                try:
+                    inp = self._Screen.getkey()
+                except curses.error:
+                    time.sleep(0.05)
+                    continue
 
                 if len(inp) == 1:
                     if curses.ascii.isctrl(inp):

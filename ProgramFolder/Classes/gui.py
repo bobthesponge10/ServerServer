@@ -1,10 +1,38 @@
 from gevent import monkey
-monkey.patch_time()
+monkey.patch_all()
 from flask import Flask, url_for, redirect, render_template, request, flash
+import flask
 from gevent.pywsgi import WSGIServer
 import os
 from flask import session
-from sys import version
+import queue
+from HandleGroup import HandleGroup
+import time
+import json
+
+
+class MessageAnnouncer:
+    def __init__(self):
+        self.listeners = []
+
+    def listen(self):
+        q = queue.Queue(maxsize=5)
+        self.listeners.append(q)
+        return q
+
+    def announce(self, msg):
+        for i in reversed(range(len(self.listeners))):
+            try:
+                self.listeners[i].put_nowait(msg)
+            except queue.Full:
+                del self.listeners[i]
+
+    @staticmethod
+    def format_sse(data: str, event=None) -> str:
+        msg = f'data: {data}\n\n'
+        if event is not None:
+            msg = f'event: {event}\n{msg}'
+        return msg
 
 
 class GUI:
@@ -17,6 +45,7 @@ class GUI:
         self.template_dir = "Webserver/Templates"
 
         self.manager = None
+        self.handle_group = None
 
         self.usernames = ["admin"]
 
@@ -41,11 +70,48 @@ class GUI:
     def create_app(self):
         if not self.manager:
             return False
+        self.handle_group = HandleGroup(self.manager.get_handle_list(), self.manager.get_user_data())
+        self.handle_group.set_timeout(30)
+
         app = Flask(__name__,
                     static_folder=os.path.join(os.getcwd(), self.static_dir),
                     template_folder=os.path.join(os.getcwd(), self.template_dir),
                     static_url_path="")
         app.secret_key = b'_5#y2L"F4h8z\n\xec]/'
+
+        @app.route('/console/listen', methods=['GET'])
+        def console_listen():
+            if self.check_login():
+                username = session.get("username")
+                h = self.handle_group.get_handle(username, session.get("id"))
+                id_ = (h["id"], h["time"])
+                session["id"] = id_
+                handle = h["handle"]
+
+                def stream():
+                    last_update_time = time.time()
+                    events = []
+                    while True:
+                        t = time.time()
+                        events += handle.get_events()
+                        if len(events) > 0:
+                            e = json.dumps(events[0])
+                            events.pop(0)
+
+                            yield MessageAnnouncer.format_sse(e, event="control")
+                            last_update_time = t
+                            self.handle_group.update_time(username, id_)
+                        else:
+                            if not handle.get_running():
+                                return "", 204
+                            if t > last_update_time + 10:
+                                yield MessageAnnouncer.format_sse("ping", event="ping")
+                                self.handle_group.update_time(username, id_)
+                                last_update_time = t
+                            time.sleep(0.1)
+
+                return flask.Response(stream(), mimetype='text/event-stream')
+            return "", 204
 
         @app.route("/")
         def index():
@@ -123,14 +189,18 @@ class GUI:
                 instances = self.manager.get_names_of_server_from_type(i)
                 for instance in instances:
                     servers.append((i, instance))
-
             return render_template("servers.html", servers=servers)
 
-        @app.route("/console")
+        @app.route("/console", methods=['POST', 'GET'])
         def console():
             if not self.check_login():
                 return redirect(url_for("login"))
-            return redirect(url_for("index"))
+            handle = self.handle_group.get_handle(session.get("username"), session.get("id"))
+            session["id"] = (handle["id"], handle["time"])
+            if request.method == "POST":
+                handle["handle"].put_event({"type": "text", "text": request.form.get("input")})
+                return '', 204
+            return render_template("console.html")
 
         @app.route("/settings")
         def settings():
@@ -154,11 +224,16 @@ class GUI:
         @app.route("/logout")
         def logout():
             if self.check_login():
+                self.handle_group.remove_handle(session.get("username"), session.get("id"))
                 session.pop("username")
+                session.pop("id")
             return redirect(url_for("login"))
 
         self.app = app
         return True
+
+    def update(self):
+        self.handle_group.check_for_timeouts()
 
     def start(self):
         if not self.app:
@@ -178,6 +253,7 @@ class GUI:
 
     def stop(self, timeout=0):
         self.server.stop(timeout)
+        self.handle_group.close_all()
         self.server = None
 
 

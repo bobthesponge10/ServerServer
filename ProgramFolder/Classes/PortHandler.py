@@ -6,6 +6,7 @@ from xml.dom.minidom import parseString, Document
 import http.client
 import time
 import CloudFlare
+import string
 
 
 class CloudflareWrapper:
@@ -25,6 +26,8 @@ class CloudflareWrapper:
             return False
         zone_info = self.cf.zones.get(params={'name': self.domain})[0]
         zone_id = zone_info.get("id")
+
+        record["name"] = self.format_subdomain(record.get("name"))
 
         dns_records = self.cf.zones.dns_records.get(zone_id)
 
@@ -100,6 +103,14 @@ class CloudflareWrapper:
 
     def get_connected(self):
         return self.connected
+
+    @staticmethod
+    def format_subdomain(s):
+        out = ""
+        for i in s:
+            if i in string.ascii_letters or i in string.digits or i == "-":
+                out += i
+        return out
 
 
 class Upnp:

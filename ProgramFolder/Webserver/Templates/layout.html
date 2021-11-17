@@ -10,18 +10,19 @@
     {% endblock %}
 </head>
 <body>
+<div class="main_box">
     <div class="topnav">
         {% include "header.html" ignore missing %}
     </div>
     <div class="content">
         {% block content %}{% endblock %}
-
-        <div class="footer">
-            {% block footer %}
-            <a class="link" href="https://github.com/bobthesponge10/ServerServer" target="_blank" >
-                https://github.com/bobthesponge10/ServerServer</a>
-            {% endblock %}
-        </div>
     </div>
+    <div class="footer">
+        {% block footer %}
+        <a class="link" href="https://github.com/bobthesponge10/ServerServer" target="_blank" >
+            https://github.com/bobthesponge10/ServerServer</a>
+        {% endblock %}
+    </div>
+</div>
 </body>
 </html>

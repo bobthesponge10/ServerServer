@@ -134,6 +134,9 @@ class ControllerManager:
                                    "is optional. Without it the entry applies to the entire controller but can be\n"
                                    "overwritten by a specific instance entry.")
         def filter_(self, handle, *args, controller="", instance="", **kwargs):
+            if len(args) == 0:
+                handle.print("Please supply an argument.")
+                return True
             if len(args) > 0 and args[0] == "allow" or args[0] == "disallow":
                 cont = controller
                 inst = instance
@@ -310,7 +313,7 @@ class ControllerManager:
                 return False
             username = args[0]
             permission = args[1]
-            if not handle.get_user_data_obj().is_user(username):
+            if not self.user_data.is_user(username):
                 handle.print("Error: user not found.")
                 return False
             if not permission.isnumeric() and 0 <= int(permission) <= handle.get_max_permission():
@@ -319,16 +322,16 @@ class ControllerManager:
                 return False
             permission = int(permission)
 
-            if not handle.is_server() and permission >= handle.get_permissions():
+            if permission >= handle.get_permissions():
                 handle.print("Error: can only change permissions to a value lower that yours.")
                 return False
 
-            if not handle.is_server() and handle.get_user_data_obj().get_user_data(username, "permission", default=0) \
+            if self.user_data.get_user_data(username, "permission", default=0) \
                     >= handle.get_permissions():
                 handle.print("Error: can only change permission of user with lower permission that yours.")
                 return False
 
-            handle.get_user_data_obj().set_user_data(username, "permission", permission)
+            self.user_data.set_user_data(username, "permission", permission)
             handle.print(f"Successfully changed {username}'s permission to {permission}.")
             return True
         
@@ -338,15 +341,15 @@ class ControllerManager:
             if len(args) < 1:
                 handle.print("Error: No username specified.")
                 return False
-            if not handle.get_user_data_obj().is_user(args[0]):
+            if not self.user_data.is_user(args[0]):
                 handle.print(f"Error: Cannot find user with name: {args[0]}")
                 return False
-            if not handle.is_server() and handle.get_user_data_obj().get_user_data(args[0], "permission", default=0) \
+            if self.user_data.get_user_data(args[0], "permission", default=0) \
                     >= handle.get_permissions():
                 handle.print("Error: can only change reset password of user with lower permission that yours.")
                 return False
-            handle.get_user_data_obj().set_user_data(args[0], "reset_password", True)
-            handle.get_user_data_obj().update_user_password(args[0], password="temp_password")
+            self.user_data.set_user_data(args[0], "reset_password", True)
+            self.user_data.update_user_password(args[0], password="temp_password")
             handle.print(f"Successfully reset password of {args[0]}")
             return True
         
@@ -374,13 +377,13 @@ class ControllerManager:
             if permissions >= handle.get_permissions():
                 handle.print("Error: cannot create a user with permissions equal or greater to yourself.")
 
-            if not handle.get_user_data_obj().create_user(username, password="temp_password"):
+            if not self.user_data.create_user(username, password="temp_password"):
                 handle.print(f"Error: user with name: {username} already exists.")
                 return False
 
             handle.print(f"Successfully created user with name: {username} with permission level: {permissions}.")
-            handle.get_user_data_obj().set_user_data(username, "permission", permissions)
-            handle.get_user_data_obj().set_user_data(username, "reset_password", True)
+            self.user_data.set_user_data(username, "permission", permissions)
+            self.user_data.set_user_data(username, "reset_password", True)
             return True
 
         @cls.add_command(["removeuser", "deleteuser", "rmuser"], ignore_chars=ignore, global_function=True,
@@ -391,28 +394,28 @@ class ControllerManager:
                 handle.print("Error: requires 1 argument.")
                 return False
             username = args[0]
-            if not handle.get_user_data_obj().is_users(username):
+            if not self.user_data.is_users(username):
                 handle.print(f"Error: User with {username} does not exist.")
                 return False
-            if not handle.is_server() and handle.get_permissions() <= \
-                    handle.get_user_data_obj().get_user_data(username, "permission", default=0):
+            if handle.get_permissions() <= \
+                    self.user_data.get_user_data(username, "permission", default=0):
                 handle.print("Error: Cannot remove user with equal or greater permission level then yourself.")
                 return False
 
             for h in self.handle_list:
                 if h.get_username() == username:
-                    h.close()
-            handle.get_user_data_obj().remove_user(username)
+                    h.exit()
+            self.user_data.remove_user(username)
             handle.print(f"Successfully removed user {username}")
             return True
 
         @cls.add_command(["users", "listusers"], ignore_chars=ignore, global_function=True,
                          help_info="Lists all users currently online.")
         def list_users(self, handle, *args, **kwargs):
-            users_dup = [i.get_username() for i in self.handle_list if not i.is_server()]
+            users_dup = [i.get_username() for i in self.handle_list if i.get_logged_in()]
             users = []
             users = [i for i in users_dup if i not in users]
-            users = [f"{i+1}: {v}" for i,v in enumerate(users)]
+            users = [f"{i+1}: {v}" for i, v in enumerate(users)]
             if len(users) > 0:
                 handle.print(f"{len(users)} total user(s) over {len(users_dup)} connection(s)\n"+"\n".join(users))
             else:
@@ -641,6 +644,9 @@ class ControllerManager:
 
         self.reload_needed = False
         self.shutdown_needed = False
+
+    def get_handle_list(self):
+        return self.handle_list
 
     def get_config(self):
         return self.config

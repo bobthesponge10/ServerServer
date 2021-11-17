@@ -1,11 +1,11 @@
-from Classes import ConsoleUI
+from Classes import GUI
 from Classes import UserData
+from Classes import ConsoleUI
 from Classes import Server
 from Classes import ControllerManager
-from Classes import UserHandle
+from Classes import ConsoleUserHandle, SocketUserHandle
 from Classes import functions
 from Classes import PortHandler
-from Classes import GUI
 from json import dumps, loads, JSONDecodeError
 from time import sleep, time
 from sys import version
@@ -21,7 +21,6 @@ from platform import system as platSys
 # make change password server side command
 # help for controllers
 # socket server option in config
-# fix status command for webserver
 # secure the webserver
 # simulate/run commands from code.
 # javascript login
@@ -116,7 +115,7 @@ def main(config):
     Console.print(f"UPNP: " + ("Working" if PortHandler.upnp.get_connected() else "Disconnected"))
     Console.print(f"CloudFlare: " + ("Working" if PortHandler.cloudflare.get_connected() else "Disconnected"))
 
-    ServerHandle = UserHandle(Console, UserInfo, server=True)
+    ServerHandle = ConsoleUserHandle(UserInfo, Console, "SERVER", 6)
     user_handles.append(ServerHandle)
 
     running = True
@@ -125,7 +124,7 @@ def main(config):
 
         for i in MainServer.get_new_connections():
             connection = MainServer.get_client_from_id(i)
-            user_handle = UserHandle(connection, UserInfo, id_=i, manager=Manager)
+            user_handle = SocketUserHandle(UserInfo, connection, id_=i, manager=Manager)
             user_handles.append(user_handle)
 
         for i in MainServer.get_old_connections():
@@ -151,15 +150,15 @@ def main(config):
         if Manager.get_shutdown_needed():
             Manager.print_all("Server Shutting down")
             running = False
-
+        if Gui.get_running():
+            Gui.update()
         Manager.flush_servers()
         for user in user_handles:
             user.update()
             items = user.get_input()
             for i_ in items:
                 if len(i_) > 0:
-                    if user.is_server():
-                        user.print(">" + i_)
+                    user.print(">" + i_)
 
                     parsed = functions.parse_string_for_commands(i_)
                     if len(parsed) > 0:

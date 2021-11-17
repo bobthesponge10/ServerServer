@@ -24,7 +24,6 @@ def change_password(console_, client_, algorithm):
     console_.update_prefix("->")
     console_.clear_input_history()
 
-
 config_file = "config.json"
 starting_prefix = "->"
 
@@ -140,7 +139,6 @@ while running:
         elif i.lower() == "changepass":
             change_password(console, C, alg)
         else:
-            console.print(">" + i)
             C.send_packet({"type": "text", "text": i})
     for p in C.get_all_packets():
         if p["type"] == "text":

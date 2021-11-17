@@ -1,1 +1,1 @@
-{"Minecraft": []}
+{"Minecraft": [{"name": "Test Server", "data": {"port": 25565, "jar_name": "server.jar", "world_file": "world", "version": "1.17.1", "memory_to_use": 4096}}]}

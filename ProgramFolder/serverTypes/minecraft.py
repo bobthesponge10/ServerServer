@@ -25,7 +25,7 @@ class Controller(BaseController):
 
         self.env_manager = self.manager.get_env_manager()
 
-        if len(args) >= 4:
+        if len(args) >= 4 and len(args[3]) > 0:
             self.version = args[3]
         else:
             self.version = self.latest_version

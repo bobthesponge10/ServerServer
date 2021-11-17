@@ -9,12 +9,15 @@ chdir(path.dirname(path.dirname(path.join(argv[0], __file__))))
 __install_requirements("data/requirements.txt")
 chdir(old_dir)
 
-from .ConsoleUI import ConsoleUI
+from .gui import GUI
 from .UserData import UserData
 from .BaseController import BaseController
+from .ConsoleUI import ConsoleUI
 from .Server import Server
 from .Client import Client
-from .UserHandle import UserHandle
+from .UserHandle import ConsoleUserHandle
+from .UserHandle import SocketUserHandle
+from .UserHandle import BufferUserHandle
 from .PortHandler import PortHandler
 from .EnvManager import EnvManager
-from .gui import GUI
+

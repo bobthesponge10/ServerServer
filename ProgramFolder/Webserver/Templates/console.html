@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+{% set active = "Console" %}
+{% block content %}
+<div id="console">
+    <div id="console_output">
+    </div>
+    <form id="send_form" method="post">
+    </form>
+    <div id="console_input">
+        <label id="prefix" for="console_input_text" style="padding: 5px;">-></label>
+        <input type="text" id="console_input_text" value="">
+    </div>
+</div>
+<script type="text/javascript">
+    var prefix = document.getElementById("prefix");
+    var input = document.getElementById("console_input_text");
+    var console = document.getElementById("console_output");
+    var data = document.getElementById("value");
+    var form = document.getElementById("send_form");
+    let source = new EventSource("{{url_for('console_listen')}}");
+
+    input.addEventListener("keyup", function(event) {
+        if (event.keyCode === 13) {
+            event.preventDefault();
+
+            const hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = 'input';
+            hiddenField.id = 'temp_element'
+            hiddenField.value = input.value;
+            form.appendChild(hiddenField);
+            form.submit();
+            input.value = "";
+            form.removeChild(document.getElementById("temp_element"));
+        }
+    });
+
+    function removeChildren(parent){
+        while(parent.firstChild){
+            parent.removeChild(parent.firstChild);
+        }
+    }
+
+    function addLine(line){
+        if( Math.abs(console.scrollTop - (console.scrollHeight - console.offsetHeight)) < 5){
+            var x = true;
+        }else{
+            var x = false;
+        }
+
+        var node = document.createElement("p");
+        var textnode = document.createTextNode(line);
+        node.appendChild(textnode);
+        console.appendChild(node);
+        if(x){
+            console.scrollTop = console.scrollHeight;
+        }
+    }
+
+    source.addEventListener('control', event => {
+        data = JSON.parse(event.data);
+        if(data["type"]=="text"){
+            lines = data["text"].split("\n")
+            for(let i = 0; i < lines.length; i++) {
+                addLine(lines[i]);
+            }
+        }else if(data["type"] == "clear_console"){
+            removeChildren(console);
+        }else if(data["type"] == "update_prefix"){
+            prefix.textContent = data["text"]
+        }
+    });
+
+
+</script>
+
+{% endblock %}
