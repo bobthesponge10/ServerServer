@@ -159,37 +159,38 @@ def main(config):
             for i_ in items:
                 if len(i_) > 0:
                     user.print(">" + i_)
+                    path = ""
+                    if i_.startswith("/"):
+                        spl = i_.split(":")
+                        path = spl[0]
+                        parsed = functions.parse_string_for_commands(":".join(spl[1:]))
+                    else:
+                        parsed = functions.parse_string_for_commands(i_)
+                    command = parsed[0]
+                    args = parsed[1:]
 
-                    parsed = functions.parse_string_for_commands(i_)
-                    if len(parsed) > 0:
-                        command = parsed[0]
-                        args = parsed[1:]
+                    if command:
                         result = False
-                        if command.startswith("/"):
-                            spl1 = command[1:].split(":")
-                            path = spl1[0]
-                            actual_command = ":".join(spl1[1:])
+                        if path:
                             path = [i for i in path.split("/") if len(i) > 0]
 
                             if len(path) == 1:
                                 controller = path[0]
-                                result = Manager.run_command_on_server_type(controller, actual_command, user, *args)
+                                result = Manager.run_command_on_server_type(controller, command, user, *args)
                                 if not result:
-                                    result = Manager.run_command(actual_command, user, *args,
+                                    result = Manager.run_command(command, user, *args,
                                                                  controller=controller)
 
                             elif len(path) == 2:
                                 controller = path[0]
                                 instance = path[1]
                                 result = Manager.run_command_on_server_instance(
-                                    controller, instance, actual_command, user, *args)
+                                    controller, instance, command, user, *args)
                                 if not result:
-                                    result = Manager.run_command(actual_command, user, *args,
+                                    result = Manager.run_command(command, user, *args,
                                                                  controller=controller, instance=instance)
-
                         else:
                             result = Manager.run_command(command, user, *args)
-
                         if not result:
                             user.print("Error: unknown command. Try the \"help\" command")
 
