@@ -1,4 +1,4 @@
-from UserHandle import BufferUserHandle
+from .UserHandle import BufferUserHandle
 import time
 
 

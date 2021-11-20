@@ -238,9 +238,7 @@ def check_pid(pid):
 
 
 if __name__ == "__main__":
-
-    chdir(ospath.dirname(ospath.join(argv[0], __file__)))
-
+    chdir(ospath.dirname(ospath.join(getcwd(), __file__)))
     # <editor-fold desc="Base Config Values">
     configFilePath = "data/config.json"
 

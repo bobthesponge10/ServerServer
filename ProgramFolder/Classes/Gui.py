@@ -6,7 +6,7 @@ from gevent.pywsgi import WSGIServer
 import os
 from flask import session
 import queue
-from HandleGroup import HandleGroup
+from .HandleGroup import HandleGroup
 import time
 import json
 

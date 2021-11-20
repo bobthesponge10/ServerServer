@@ -4,8 +4,7 @@ from sys import argv
 
 
 old_dir = getcwd()
-chdir(path.dirname(path.dirname(path.join(argv[0], __file__))))
-
+chdir(path.dirname(path.dirname(__file__)))
 __install_requirements("data/requirements.txt")
 chdir(old_dir)
 
