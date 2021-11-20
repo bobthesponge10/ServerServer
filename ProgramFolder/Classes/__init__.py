@@ -12,6 +12,7 @@ chdir(old_dir)
 from .Gui import GUI
 from .UserData import UserData
 from .BaseController import BaseController
+from .HandleGroup import HandleGroup
 from .ConsoleUI import ConsoleUI
 from .Server import Server
 from .Client import Client
