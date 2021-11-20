@@ -21,18 +21,26 @@ class CloudflareWrapper:
         self.connected = False
         self.attempting = False
 
+    def ensure_connection(self):
+        try:
+            if self.cf:
+                self.cf.zones.get()
+            else:
+                self.cf = CloudFlare.CloudFlare(email=self.email, token=self.api_key)
+        except CloudFlare.exceptions.CloudFlareAPIError:
+            self.cf = CloudFlare.CloudFlare(email=self.email, token=self.api_key)
+
     def ensure_dns_record(self, record):
         if not self.connected and not self.attempting:
             return False
+
         zone_info = self.cf.zones.get(params={'name': self.domain})[0]
         zone_id = zone_info.get("id")
-
-        record["name"] = self.format_subdomain(record.get("name"))
-
+        record["name"] = self.format(record.get("name"))
         dns_records = self.cf.zones.dns_records.get(zone_id)
 
         for r in dns_records:
-            if r.get("type") == record.get("type") and r.get("name") == record.get("name").lower() and \
+            if r.get("type") == record.get("type") and r.get("name") == record.get("name") and \
                     r.get("content") == record.get("content"):
                 return True
         for r in dns_records:
@@ -66,8 +74,8 @@ class CloudflareWrapper:
         self.proxy_domain = base_domain+"p"
 
         try:
+            self.ensure_connection()
             self.attempting = True
-            self.cf = CloudFlare.CloudFlare(email=self.email, token=self.api_key)
             if not self.ensure_dns_record({"name": f"{self.base_domain}.{self.domain}",
                                            "type": "A",
                                            "content": public_ip}):
@@ -105,12 +113,20 @@ class CloudflareWrapper:
         return self.connected
 
     @staticmethod
+    def format(s):
+        out = ""
+        for i in s:
+            if i in string.ascii_letters or i in string.digits or i == "-" or i == "." or "_":
+                out += i
+        return out.lower()
+
+    @staticmethod
     def format_subdomain(s):
         out = ""
         for i in s:
             if i in string.ascii_letters or i in string.digits or i == "-":
                 out += i
-        return out
+        return out.lower()
 
 
 class Upnp:

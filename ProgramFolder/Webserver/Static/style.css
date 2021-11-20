@@ -79,6 +79,10 @@ body {
 a.link {
     color: green;
     text-decoration: none;
+    transition: 0.3s;
+}
+a.link:hover{
+    color: darkgreen;
 }
 
 .box {
@@ -150,6 +154,13 @@ h2.button_item{
 .login input{
     margin: 0px 10px 10px 0px;
     font-size: 25px;
+    outline: none;
+    border: 1px darkgray solid;
+    transition: 0.3s;
+}
+
+.login input:hover{
+    background-color: #ddd;
 }
 
 th{
@@ -205,12 +216,16 @@ text-align: left;
     color: white;
     font-size: 15px;
     white-space: nowrap;
+    transition: 0.3s;
+}
+#console_input:hover{
+    background-color: #333;
 }
 #console_input_text{
     padding: 5px;
     width: 100%;
     font-size: 15px;
-    background-color: black;
+    background-color: transparent;
     color: white;
     border: none;
     outline: none;

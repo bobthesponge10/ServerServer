@@ -5,6 +5,27 @@ from different games all through a single application.
 
 ## Server Server Guiding Guide
 
+### Quickstart
+In order to setup the ServerServer all that is required is to have a python 3 installation. 
+Just download the code and it will run with the default config settings.
+With the default config settings, the ServerServer's ip will be 127.0.0.1 and it will not attempt to do any automated routing.
+
+All you need to do now is to create and start a server. To do this just use the "create_server" command and then the "start" command.
+For example to create and start a Minecraft server of the most recent version you would use these commands:
+
+    create_server Minecraft serverName
+    
+    start Minecraft serverName
+
+Stopping the servers is simple. Just use the "stop" command:
+
+    stop Minecraft serverName
+
+To shutdown the Server Server just use the "shutdown" command:
+
+    shutdown
+
+
 ### Commands
 The main way to interact with the Server Server is through commands within its own console 
 or by connecting to it through the client application.
@@ -109,3 +130,61 @@ Other arguments for the filter command include
  - reset: removes all entries in the filter
 
 ## Command List
+
+### help
+
+### commands
+
+### status
+
+### filter
+
+### clear
+
+### message
+
+### shout
+
+### shutdown
+
+### focus
+
+### un_focus
+
+### set_permission
+
+### reset_password
+
+### get_permissions
+
+### create_user
+
+### remove_user
+
+### list_users
+
+### load_controllers
+
+### get_controllers
+
+### reload_controllers
+
+### reload_controller
+
+### reload_manager
+
+### create_server
+
+### remove_server
+
+### save_servers
+
+### list_servers
+
+### server_info
+
+### start
+
+### setup
+
+### stop

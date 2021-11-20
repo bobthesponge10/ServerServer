@@ -20,14 +20,16 @@ from platform import system as platSys
 # organize client application (its very messy and bad right now)
 # make change password server side command
 # help for controllers
-# socket server option in config
 # secure the webserver
 # simulate/run commands from code.
 # javascript login
+# print no new line in web server
+# remember console output in gui
+# user permissions for UI
 
 # LIKE TO DO
 # something with logging
-# add more servers (factorio)
+# add more servers (factorio, tf2/gmod, unturned)
 # run as admin
 # discord bot controller
 # hard exit servers in the event they hang/crash
@@ -99,7 +101,7 @@ def main(config):
     if config["webserver"]:
         Gui.set_manager(Manager)
         Gui.set_ip(config["ip"])
-        Gui.set_port(server_port_handler.request_port(config['webServerPort'], description="WebServer", TCP=True))
+        Gui.set_port(server_port_handler.request_port(config['webServerPort'], description="WebServer"))
         Gui.create_app()
         Gui.start()
 

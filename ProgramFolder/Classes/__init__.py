@@ -9,7 +9,7 @@ chdir(path.dirname(path.dirname(path.join(argv[0], __file__))))
 __install_requirements("data/requirements.txt")
 chdir(old_dir)
 
-from .gui import GUI
+from .Gui import GUI
 from .UserData import UserData
 from .BaseController import BaseController
 from .ConsoleUI import ConsoleUI

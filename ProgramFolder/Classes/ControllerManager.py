@@ -512,7 +512,7 @@ class ControllerManager:
             handle.print("Failed to save instances to file.")
             return False
 
-        @cls.add_command(["listinstances", "printinstances", "instances", "servers"],
+        @cls.add_command(["listinstances", "printinstances", "listservers", "instances", "servers"],
                          ignore_chars=ignore, global_function=True, permission=1, help_info="Lists all instances")
         def list_instances(self, handle, *args, controller="", **kwargs):
             out = []
