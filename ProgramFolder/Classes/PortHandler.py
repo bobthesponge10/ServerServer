@@ -367,6 +367,7 @@ class PortHandler:
         return True
 
     def _add_port(self, port, description="", TCP=False, UDP=False, subdomain_name="", srv_service="", proxy=False):
+        subdomain_name = CloudflareWrapper.format_subdomain(subdomain_name)
         forwarded = False
         if self.use_upnp and self.upnp.get_connected() and (TCP or UDP):
             if TCP:
