@@ -9,10 +9,10 @@
   "socketPort": 10000,
   "webserver": true,
   "webServerPort": 80,
-  "ip": "",
+  "ip": "127.0.0.1",
   "headless": false,
   "upnp": false,
-  "cloudflare": true,
+  "cloudflare": false,
   "cloudflareEmail": "",
   "cloudflareApiKey": "",
   "cloudflareDomain": ""
