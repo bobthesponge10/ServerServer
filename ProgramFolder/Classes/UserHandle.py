@@ -40,6 +40,10 @@ class UserHandle:
     def set_prefix(self, prefix):
         raise NotImplementedError
 
+    @abstractmethod
+    def get_prefix(self):
+        raise NotImplementedError
+
     def update(self):
         pass
 
@@ -181,6 +185,9 @@ class ConsoleUserHandle(UserHandle):
     def set_prefix(self, prefix):
         self.console.update_prefix(prefix)
 
+    def get_prefix(self):
+        return self.console.get_prefix()
+
 
 class SocketUserHandle(UserHandle):
     def __init__(self, user_data, socket_connection, id_, manager):
@@ -192,6 +199,8 @@ class SocketUserHandle(UserHandle):
         self.packets = []
         self.running = True
         self.login_thread = None
+
+        self.prefix = "->"
 
         self.login()
 
@@ -277,7 +286,11 @@ class SocketUserHandle(UserHandle):
         self.socket.send_packet({"type": "clear_console"})
 
     def set_prefix(self, prefix):
+        self.prefix = prefix
         self.socket.send_packet({"type": "update_prefix", "text": prefix})
+
+    def get_prefix(self):
+        return self.prefix
 
     def update(self):
         if self.logged_in:
@@ -312,6 +325,8 @@ class BufferUserHandle(UserHandle):
         self.set_permissions(permissions)
         self.set_username(username)
 
+        self.prefix = "->"
+
         self.logged_in = True
         self.load_data()
 
@@ -328,7 +343,11 @@ class BufferUserHandle(UserHandle):
         self.out_queue.put({"type": "clear_console"})
 
     def set_prefix(self, prefix):
+        self.prefix = prefix
         self.out_queue.put({"type": "update_prefix", "text": prefix})
+
+    def get_prefix(self):
+        return self.prefix
 
     def get_packets(self, type_):
         if not isinstance(type_, list):

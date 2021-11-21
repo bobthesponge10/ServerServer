@@ -278,6 +278,13 @@ class ConsoleUI(Thread):
                 self._input_cursor = limit
         self.hard_update_input()
 
+    def get_prefix(self) -> str:
+        """
+        Returns the prefix of the console
+        :return: The console's prefix
+        """
+        return self._input_prefix
+
     def clear_input_history(self):
         """
         Clears the console's input history.

@@ -33,45 +33,49 @@ class CloudflareWrapper:
     def ensure_dns_record(self, record):
         if not self.connected and not self.attempting:
             return False
+        try:
+            zone_info = self.cf.zones.get(params={'name': self.domain})[0]
+            zone_id = zone_info.get("id")
+            record["name"] = self.format(record.get("name"))
+            dns_records = self.cf.zones.dns_records.get(zone_id)
 
-        zone_info = self.cf.zones.get(params={'name': self.domain})[0]
-        zone_id = zone_info.get("id")
-        record["name"] = self.format(record.get("name"))
-        dns_records = self.cf.zones.dns_records.get(zone_id)
+            for r in dns_records:
+                if r.get("type") == record.get("type") and r.get("name") == record.get("name") and \
+                        r.get("content") == record.get("content"):
+                    return True
+            for r in dns_records:
+                if r.get("name") == record.get("name").lower():
+                    self.cf.zones.dns_records.delete(zone_id, r.get("id"))
+                    break
 
-        for r in dns_records:
-            if r.get("type") == record.get("type") and r.get("name") == record.get("name") and \
-                    r.get("content") == record.get("content"):
-                return True
-        for r in dns_records:
-            if r.get("name") == record.get("name").lower():
-                self.cf.zones.dns_records.delete(zone_id, r.get("id"))
-                break
-
-        self.cf.zones.dns_records.post(zone_id, data=record)
-        return True
+            self.cf.zones.dns_records.post(zone_id, data=record)
+            return True
+        except CloudFlare.exceptions.CloudFlareAPIError:
+            return False
 
     def delete_record(self, name, service=""):
         if not self.connected:
             return False
+        try:
+            zone_info = self.cf.zones.get(params={'name': self.domain})[0]
+            zone_id = zone_info.get("id")
 
-        zone_info = self.cf.zones.get(params={'name': self.domain})[0]
-        zone_id = zone_info.get("id")
-
-        dns_records = self.cf.zones.dns_records.get(zone_id)
-        for r in dns_records:
-            n = r.get("name")
-            if (not service and n == name.lower()) or (service and n.startswith(f"_{service}") and n.endswith(name)):
-                self.cf.zones.dns_records.delete(zone_id, r.get("id"))
-                break
-        return True
+            dns_records = self.cf.zones.dns_records.get(zone_id)
+            for r in dns_records:
+                n = r.get("name")
+                if (not service and n == name.lower()) or (service and n.startswith(f"_{service}") and n.endswith(name)):
+                    self.cf.zones.dns_records.delete(zone_id, r.get("id"))
+                    break
+            return True
+        except CloudFlare.exceptions.CloudFlareAPIError:
+            return False
 
     def setup(self, email, api_key, domain, base_domain, public_ip):
         self.email = email
         self.api_key = api_key
         self.domain = domain
-        self.base_domain = base_domain
-        self.proxy_domain = base_domain+"p"
+        self.base_domain = self.format_subdomain(base_domain)
+        self.proxy_domain = self.format_subdomain(base_domain+"p")
 
         try:
             self.ensure_connection()
@@ -100,6 +104,10 @@ class CloudflareWrapper:
         self.connected = True
         return True
 
+    def remove_setup_records(self):
+        self.delete_record(f"{self.base_domain}.{self.domain}")
+        self.delete_record(f"{self.proxy_domain}.{self.domain}")
+
     def get_domain(self):
         return self.domain
 
@@ -116,7 +124,7 @@ class CloudflareWrapper:
     def format(s):
         out = ""
         for i in s:
-            if i in string.ascii_letters or i in string.digits or i == "-" or i == "." or "_":
+            if i in string.ascii_letters or i in string.digits or i == "-" or i == "." or i == "_":
                 out += i
         return out.lower()
 
@@ -198,7 +206,10 @@ class Upnp:
             if service.childNodes[0].data.find('WANIPConnection') > 0:
                 path = service.parentNode.getElementsByTagName('controlURL')[0].childNodes[0].data
         self.path = path
-        self.connected = True
+        if self.path:
+            self.connected = True
+        else:
+            self.connected = False
 
     @staticmethod
     def generate_xml(arguments, action):
@@ -238,6 +249,7 @@ class Upnp:
                 return False
 
         arguments = [
+            ("NewRemoteHost", ""),
             ('NewExternalPort', str(external_port)),
             ('NewProtocol', str(protocol)),
             ('NewInternalPort', str(internal_port)),
@@ -417,7 +429,8 @@ class PortHandler:
              "domain": name,
              "srv": srv,
              "service": srv_service,
-             "proxy": proxy}
+             "proxy": proxy,
+             "parent": self}
 
         self.all_ports.append(p)
         self.taken_ports.append(p)
@@ -435,15 +448,25 @@ class PortHandler:
                     full_port = p
 
         if full_port:
-            self.taken_ports.remove(full_port)
-            self.all_ports.remove(full_port)
+            self.remove_port_connections(port, full_port, delete)
 
-            for rule in self.upnp.rules:
+    @classmethod
+    def remove_port_connections(cls, port, full_port=None, delete=False):
+        if not full_port:
+            for p in cls.all_ports:
+                if p.get("port") == port:
+                    full_port = p
+
+        if full_port:
+            full_port["parent"].taken_ports.remove(full_port)
+            cls.all_ports.remove(full_port)
+
+            for rule in cls.upnp.rules:
                 if int(rule["NewInternalPort"]) == int(rule["NewExternalPort"]) == port and \
                         rule["NewPortMappingDescription"].startswith("ServerServer"):
-                    self.upnp.delete_port(rule["NewExternalPort"], rule["NewProtocol"])
+                    cls.upnp.delete_port(rule["NewExternalPort"], rule["NewProtocol"])
             if delete and full_port.get("routed"):
-                self.cloudflare.delete_record(full_port.get("domain"), service=full_port.get("service"))
+                cls.cloudflare.delete_record(full_port.get("domain"), service=full_port.get("service"))
 
     @classmethod
     def get_connection_to_port(cls, port):
@@ -530,3 +553,12 @@ class PortHandler:
         if not cls.use_cloudflare or not cls.upnp.get_connected():
             return
         cls.cloudflare.setup(email, api_key, domain, base_domain, cls.public_ip)
+
+    @classmethod
+    def close_connections(cls, ports=True, cloudflare=True, delete=True):
+        if ports:
+            for port in cls.all_ports:
+                cls.remove_port_connections(port.get("port"), full_port=port, delete=delete)
+        if cloudflare:
+            if cls.use_cloudflare and cls.cloudflare.get_connected():
+                cls.cloudflare.remove_setup_records()

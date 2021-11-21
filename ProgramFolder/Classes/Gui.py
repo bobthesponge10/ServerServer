@@ -67,6 +67,20 @@ class GUI:
     def check_login(self):
         return self.manager.get_user_data().is_user(session.get("username"))
 
+    def get_permissions(self):
+        if not self.check_login():
+            return 0
+        return self.manager.get_user_data().get_user_data(session.get("username"), "permission", default=0)
+
+    def get_handle(self):
+        if not self.check_login():
+            return
+        username = session.get("username")
+        h = self.handle_group.get_handle(username, session.get("id"))
+        id_ = (h["id"], h["time"])
+        session["id"] = id_
+        return h
+
     def create_app(self):
         if not self.manager:
             return False
@@ -83,9 +97,8 @@ class GUI:
         def console_listen():
             if self.check_login():
                 username = session.get("username")
-                h = self.handle_group.get_handle(username, session.get("id"))
+                h = self.get_handle()
                 id_ = (h["id"], h["time"])
-                session["id"] = id_
                 handle = h["handle"]
 
                 def stream():
@@ -141,7 +154,10 @@ class GUI:
             if request.method == "POST":
                 name = request.form.get("server_name")
                 args = request.form.get("args")
-                if self.manager.create_instance(controller, name, args):
+                p = self.get_permissions()
+                if p < 4:
+                    flash("Higher permission required")
+                elif self.manager.create_instance(controller, name, args):
                     flash(f"Created {controller} server: {name}")
                     servers = self.manager.get_names_of_server_from_type(controller)
                 else:
@@ -158,17 +174,24 @@ class GUI:
                 return redirect(url_for("home"))
             server_ = self.manager.get_instance_from_type_and_name(controller, server)
             if request.method == 'POST':
+                p = self.get_permissions()
                 if "start" in request.form.keys():
-                    if not server_.get_running():
+                    if p < 3:
+                        flash("Higher permission required")
+                    elif not server_.get_running():
                         server_.start()
                         flash(f"Started {server}")
                 elif "stop" in request.form.keys():
-                    if server_.get_running():
+                    if p < 3:
+                        flash("Higher permission required")
+                    elif server_.get_running():
                         server_.stop()
                         flash(f"Stopped {server}")
                         return render_template("server.html", server=server_, running=False)
                 elif "delete" in request.form.keys():
-                    if server_.get_running():
+                    if p < 4:
+                        flash("Higher permission required")
+                    elif server_.get_running():
                         flash(f"Can't delete running server")
                     else:
                         if self.manager.remove_instance(controller, server):
@@ -195,12 +218,11 @@ class GUI:
         def console():
             if not self.check_login():
                 return redirect(url_for("login"))
-            handle = self.handle_group.get_handle(session.get("username"), session.get("id"))
-            session["id"] = (handle["id"], handle["time"])
+            handle = self.get_handle()["handle"]
             if request.method == "POST":
-                handle["handle"].put_event({"type": "text", "text": request.form.get("input")})
+                handle.put_event({"type": "text", "text": request.form.get("input")})
                 return '', 204
-            return render_template("console.html")
+            return render_template("console.html", prefix=handle.get_prefix())
 
         @app.route("/settings")
         def settings():

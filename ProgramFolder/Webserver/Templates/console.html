@@ -7,14 +7,14 @@
     <form id="send_form" method="post">
     </form>
     <div id="console_input">
-        <label id="prefix" for="console_input_text" style="padding: 5px;">-></label>
+        <label id="prefix" for="console_input_text" style="padding: 5px;">{{prefix}}</label>
         <input type="text" id="console_input_text" value="">
     </div>
 </div>
 <script type="text/javascript">
     var prefix = document.getElementById("prefix");
     var input = document.getElementById("console_input_text");
-    var console = document.getElementById("console_output");
+    var console_ = document.getElementById("console_output");
     var data = document.getElementById("value");
     var form = document.getElementById("send_form");
     let source = new EventSource("{{url_for('console_listen')}}");
@@ -41,19 +41,29 @@
         }
     }
 
-    function addLine(line){
-        if( Math.abs(console.scrollTop - (console.scrollHeight - console.offsetHeight)) < 5){
+    function addLine(line, newLine){
+        if( Math.abs(console_.scrollTop - (console_.scrollHeight - console_.offsetHeight)) < 5){
             var x = true;
         }else{
             var x = false;
         }
-
-        var node = document.createElement("p");
-        var textnode = document.createTextNode(line);
-        node.appendChild(textnode);
-        console.appendChild(node);
+        if(console_.childElementCount == 0 || console_.lastChild.classList.contains("newLine")){
+            var node = document.createElement("p");
+            if(newLine){
+                node.classList.add("newLine");
+            }
+            var textnode = document.createTextNode(line);
+            node.appendChild(textnode);
+            console_.appendChild(node);
+        }else{
+            var oldText = console_.lastChild.textContent;
+            console_.lastChild.textContent = oldText + line;
+            if(newLine){
+                console_.lastChild.classList.add("newLine");
+            }
+        }
         if(x){
-            console.scrollTop = console.scrollHeight;
+            console_.scrollTop = console.scrollHeight;
         }
     }
 
@@ -62,10 +72,14 @@
         if(data["type"]=="text"){
             lines = data["text"].split("\n")
             for(let i = 0; i < lines.length; i++) {
-                addLine(lines[i]);
+                if(i==lines.length-1){
+                    addLine(lines[i], data["newline"]);
+                }else{
+                    addLine(lines[i], true);
+                }
             }
         }else if(data["type"] == "clear_console"){
-            removeChildren(console);
+            removeChildren(console_);
         }else if(data["type"] == "update_prefix"){
             prefix.textContent = data["text"]
         }

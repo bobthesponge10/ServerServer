@@ -21,11 +21,9 @@ from platform import system as platSys
 # make change password server side command
 # help for controllers
 # secure the webserver
-# simulate/run commands from code.
+# make it so gui buttons execute a command instead
 # javascript login
-# print no new line in web server
 # remember console output in gui
-# user permissions for UI
 
 # LIKE TO DO
 # something with logging
@@ -209,7 +207,7 @@ def main(config):
     MainServer.stop()
     Gui.stop()
     server_port_handler.remove()
-
+    PortHandler.close_connections(ports=True, cloudflare=False, delete=False)
     start_time = time()
 
     while MainServer.running:

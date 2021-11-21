@@ -275,6 +275,14 @@ class ControllerManager:
             self.shutdown()
             return True
 
+        @cls.add_command(["fullshutdown"], ignore_chars=ignore, permission=5, default="full_shutdown",
+                         global_function=True, help_info="Shuts down the Server stopping all servers and completely "
+                                                         "reset network configuration to the normal state.")
+        def full_shutdown(self, handle, *args, **kwargs):
+            self.shutdown()
+            self.port_handler.close_connections(True, True, True)
+            return True
+
         @cls.add_command(["focus"], ignore_chars=ignore, global_function=True,
                          help_info="Focuses console onto a specific controller or controller instance. \n"
                                    "Puts all commands into the scope of specified location and limits view"
