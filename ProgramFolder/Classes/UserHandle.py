@@ -152,6 +152,9 @@ class UserHandle:
             if self.exit_callback:
                 self.exit_callback()
 
+    def get_id(self):
+        return -1
+
     @staticmethod
     def get_all_from_queue(q):
         out = []

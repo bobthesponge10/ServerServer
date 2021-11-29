@@ -1,5 +1,6 @@
 import socket
 import re
+from .CertManager import CertManager
 from urllib.parse import urlparse, urlunparse
 import requests
 from xml.dom.minidom import parseString, Document
@@ -349,6 +350,9 @@ class PortHandler:
     upnp_timeout_time = 60
     upnp_ports = []
 
+    use_certs = False
+    certManager = CertManager()
+
     public_ip = ""
 
     def __init__(self):
@@ -512,6 +516,14 @@ class PortHandler:
         return cls.use_cloudflare
 
     @classmethod
+    def set_use_certs(cls, use_certs):
+        cls.use_certs = use_certs
+
+    @classmethod
+    def get_use_certs(cls):
+        return cls.use_certs
+
+    @classmethod
     def wipe_ports(cls):
         if not cls.use_upnp:
             return
@@ -562,3 +574,27 @@ class PortHandler:
         if cloudflare:
             if cls.use_cloudflare and cls.cloudflare.get_connected():
                 cls.cloudflare.remove_setup_records()
+
+    @classmethod
+    def initialize_certs(cls, path, selfSigned=False, cloudflare_email="", cloudflare_api_key="", domain=""):
+        if not cls.use_certs:
+            return
+        if cls.use_cloudflare and cls.cloudflare.get_connected():
+            ips = [cls.ip]
+            if cls.public_ip:
+                ips.append(cls.public_ip)
+            cls.certManager.setup(cls.cloudflare.get_domain(), path, ips, selfSigned, cloudflare_email,
+                                  cloudflare_api_key, domain)
+        elif cls.use_upnp and cls.upnp.get_connected():
+            ips = [cls.ip]
+            if cls.public_ip:
+                ips.append(cls.public_ip)
+            cls.certManager.setup("", path, ips, True)
+        else:
+            cls.certManager.setup("", path, [cls.ip], True)
+
+    @classmethod
+    def get_cert_files(cls):
+        if cls.use_certs:
+            return cls.certManager.get_cert_file_path(), cls.certManager.get_key_file_path()
+        return "", ""

@@ -7,6 +7,7 @@ from json import loads as j_loads
 from queue import Queue, Empty
 from threading import Thread
 from io import BytesIO
+import ssl
 
 
 class Client(Thread):
@@ -19,17 +20,32 @@ class Client(Thread):
         self.ip = "127.0.0.1"
 
         self.socket = socket()
+        self.context = None
         self.version = -2
         self.version_to_use = HIGHEST_PROTOCOL
 
         self.stopping = False
         self.running = False
+        self.ssl = False
+        self.secure = True
 
         self.bytes = b""
         self.bytes_queue = Queue()
 
+    def set_ssl(self, ssl):
+        self.ssl = ssl
+
+    def set_secure(self, secure):
+        self.secure = secure
+
     def start(self):
         self.socket = socket()
+        if self.ssl:
+            self.context = ssl.SSLContext()
+            if self.secure:
+                self.context.verify_mode = ssl.CERT_REQUIRED
+            wrapped_socket = self.context.wrap_socket(self.socket)
+            self.socket = wrapped_socket
         try:
             self.socket.connect((self.ip, self.port))
 

@@ -117,6 +117,8 @@ class ConsoleUI(Thread):
         :param string: The text to print.
         :param newline: If a newline should be printed at the end of the string.
         """
+        if len(self._console_buffer) == 0:
+            self._newline = True
         if not self._newline:
             self._console_line -= 1
         if self._console_line >= self._max_size - 1:
@@ -134,7 +136,6 @@ class ConsoleUI(Thread):
 
         if len(self._console_buffer) > self._max_size/2:
             self._console_buffer.pop(0)
-
         self._Console.addstr(self._console_line, 0, line[:self._max_size - 1])
 
         temp_display_storage = self._console_display_line

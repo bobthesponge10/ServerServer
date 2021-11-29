@@ -43,11 +43,17 @@ class GUI:
         self.port = 80
         self.static_dir = "Webserver/Static"
         self.template_dir = "Webserver/Templates"
+        self.certs = "", ""
 
         self.manager = None
         self.handle_group = None
 
         self.usernames = ["admin"]
+
+        self.secret_key = b'_5#y2L"F4h8z\n\xec]/'
+
+    def set_secret_key(self, key):
+        self.secret_key = key
 
     def set_manager(self, manager):
         self.manager = manager
@@ -63,6 +69,9 @@ class GUI:
 
     def get_port(self):
         return self.port
+
+    def set_certs(self, certs):
+        self.certs = certs
 
     def check_login(self):
         return self.manager.get_user_data().is_user(session.get("username"))
@@ -91,7 +100,7 @@ class GUI:
                     static_folder=os.path.join(os.getcwd(), self.static_dir),
                     template_folder=os.path.join(os.getcwd(), self.template_dir),
                     static_url_path="")
-        app.secret_key = b'_5#y2L"F4h8z\n\xec]/'
+        app.secret_key = self.secret_key
 
         @app.route('/console/listen', methods=['GET'])
         def console_listen():
@@ -261,9 +270,14 @@ class GUI:
         if not self.app:
             return False
         if not self.server:
+
             class devnull:
                 write = lambda _: None
-            self.server = WSGIServer((self.ip, self.port), self.app, log=devnull)
+            if self.certs[0] and self.certs[1]:
+                self.server = WSGIServer((self.ip, self.port), self.app, log=devnull,
+                                         certfile=self.certs[0], keyfile=self.certs[1])
+            else:
+                self.server = WSGIServer((self.ip, self.port), self.app, log=devnull)
 
         self.server.start()
         return True

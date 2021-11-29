@@ -5,15 +5,17 @@
   "serverDir":"../ServerFolder",
   "pidFile": "data/serverserver.pid",
   "envDir":"Env",
+  "ssl": true,
   "socketServer": true,
   "socketPort": 10000,
   "webserver": true,
-  "webServerPort": 80,
-  "ip": "127.0.0.1",
+  "webServerPort": 443,
+  "ip": "",
   "headless": false,
   "upnp": false,
   "cloudflare": false,
   "cloudflareEmail": "",
   "cloudflareApiKey": "",
-  "cloudflareDomain": ""
+  "cloudflareDomain": "",
+  "gui_secret_key": ""
 }

@@ -8,6 +8,7 @@ from json import loads as j_loads
 from threading import Thread
 from queue import Queue, Empty
 from io import BytesIO
+import ssl
 
 
 class ClientHandler:
@@ -104,8 +105,10 @@ class Server(Thread):
         self.old_connections = Queue()
 
         self.socket = socket()
+        self.context = None
         self.port = 10000
         self.ip = "127.0.0.1"
+        self.certs = "", ""
         self.socket_list = []
 
         self.logger = logger
@@ -117,6 +120,10 @@ class Server(Thread):
 
             self.new_connections.empty()
             self.old_connections.empty()
+
+            if self.certs[0] and self.certs[1]:
+                self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+                self.context.load_cert_chain(self.certs[0], self.certs[1])
 
             self.socket = socket()
 
@@ -133,6 +140,9 @@ class Server(Thread):
                     self.log("Failed socket bind, trying again")
                     sleep(1)
             self.socket.listen(10)
+            if self.context:
+                wrapped_socket = self.context.wrap_socket(self.socket, server_side=True)
+                self.socket = wrapped_socket
 
             self.update_sockets()
 
@@ -216,6 +226,9 @@ class Server(Thread):
 
     def set_ip(self, ip):
         self.ip = ip
+
+    def set_certs(self, certs):
+        self.certs = certs
 
     def get_port(self):
         return self.port

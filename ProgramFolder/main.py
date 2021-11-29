@@ -15,15 +15,15 @@ from sys import argv, executable
 from platform import system as platSys
 
 # STUFF TO DO
+# port handler edge case analysis
 # prevent subdomain overlap
 # upnp prevent overlap with normal port forwarded ports
 # organize client application (its very messy and bad right now)
 # make change password server side command
 # help for controllers
-# secure the webserver
 # make it so gui buttons execute a command instead
-# javascript login
 # remember console output in gui
+# cert auto-renewal
 
 # LIKE TO DO
 # something with logging
@@ -55,6 +55,12 @@ def main(config):
     PortHandler.set_use_cloudflare(config["cloudflare"])
     PortHandler.initialize_cloudflare(config["cloudflareEmail"], config["cloudflareApiKey"],
                                       config["cloudflareDomain"], "serverserver")
+    if config["ssl"]:
+        PortHandler.set_use_certs(True)
+        PortHandler.initialize_certs("Env/certs", selfSigned=False,
+                                     cloudflare_email=config["cloudflareEmail"],
+                                     cloudflare_api_key=config["cloudflareApiKey"],
+                                     domain=config["cloudflareDomain"])
     PortHandler.wipe_ports()
 
     user_handles = []
@@ -94,12 +100,15 @@ def main(config):
     if config["socketServer"]:
         MainServer.set_ip(config["ip"])
         MainServer.set_port(server_port_handler.request_port(config['socketPort'], description="Controller", TCP=True))
+        MainServer.set_certs(PortHandler.get_cert_files())
         MainServer.start()
 
     if config["webserver"]:
         Gui.set_manager(Manager)
+        Gui.set_secret_key(config["gui_secret_key"])
         Gui.set_ip(config["ip"])
         Gui.set_port(server_port_handler.request_port(config['webServerPort'], description="WebServer"))
+        Gui.set_certs(PortHandler.get_cert_files())
         Gui.create_app()
         Gui.start()
 
@@ -216,6 +225,7 @@ def main(config):
             break
 
     Console.print("Goodbye")
+    Console.clear_console()
     sleep(0.5)
     Console.stop()
     exit()
@@ -247,6 +257,7 @@ if __name__ == "__main__":
         "serverDir": "../ServerFolder",
         "pidFile": "data/serverserver.pid",
         "envDir": "Env",
+        "ssl": True,
         "socketServer": True,
         "socketPort": 10000,
         "webserver": True,
@@ -257,7 +268,8 @@ if __name__ == "__main__":
         "cloudflare": False,
         "cloudflareEmail": "",
         "cloudflareApiKey": "",
-        "cloudflareDomain": ""
+        "cloudflareDomain": "",
+        "gui_secret_key": "1234567youprobablydontwantthis"
     }
 
     # </editor-fold>

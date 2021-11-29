@@ -3,6 +3,7 @@ from ProgramFolder.Classes import ConsoleUI
 from ProgramFolder.Classes import UserData
 import time
 import json
+import ssl
 
 
 def change_password(console_, client_, algorithm):
@@ -29,6 +30,8 @@ starting_prefix = "->"
 
 # <editor-fold desc="Loads config data from file">
 
+secure_socket = False
+ignore_cert = False
 ip = ""
 port = -1
 
@@ -45,6 +48,8 @@ except json.JSONDecodeError:
 
 ip = config.get("ip", ip)
 port = config.get("port", port)
+secure_socket = config.get("ssl", secure_socket)
+ignore_cert = config.get("ignore_cert", ignore_cert)
 # </editor-fold>
 
 valid_address = True
@@ -67,6 +72,8 @@ if not valid_address:
     console.update_prefix(starting_prefix)
 
 C = Client()
+C.set_ssl(secure_socket)
+C.set_secure(not ignore_cert)
 C.set_ip(ip)
 C.set_port(port)
 C.wait_time = 0.01
